@@ -1,7 +1,8 @@
 import os
 import time
+from multiprocessing import Manager, Process
+
 import gymnasium as gym
-from multiprocessing import Process, Manager
 
 
 # Define send and receive functions as standalone, top-level functions

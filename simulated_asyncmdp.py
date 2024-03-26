@@ -1,6 +1,3 @@
-
-
-
 if __name__ == "__main__":
 
     # given an environment datarate and agent datarate, print whenever the agent sends data by the right time

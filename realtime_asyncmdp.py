@@ -1,8 +1,9 @@
 import multiprocessing as mp
+import os
 import queue
 import time
+
 import gymnasium as gym
-import os
 
 
 def getenv_as_int(name, default: int = 0):
@@ -62,7 +63,7 @@ class Worker(mp.Process):
         observation, info = self.env.reset()
         total_reward = 0
         terminated = truncated = False
-        
+
         self.main_buffer.put_nowait(
             {
                 "observation": observation,
@@ -72,14 +73,12 @@ class Worker(mp.Process):
                 "info": info,
             }
         )
-        
+
         if getenv_as_int("WAIT_FOR_FIRST_ACTION") > 0:
             last_action = self.env.action_space.sample()
         else:
             last_action = self.worker_buffer.get()
-        
-        
-        
+
         # asynchronous
         while self.running:
             dt = 0
@@ -99,7 +98,7 @@ class Worker(mp.Process):
 
                 end_time = time.monotonic()
                 dt += end_time - start_time
-            
+
             # if action is None:
             #     action = self.env.action_space.sample()
             #     if getenv_as_int("DEBUG") > 0:
