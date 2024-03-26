@@ -62,7 +62,8 @@ class Worker(mp.Process):
         observation, info = self.env.reset()
         total_reward = 0
         terminated = truncated = False
-        self.main_buffer.put(
+        
+        self.main_buffer.put_nowait(
             {
                 "observation": observation,
                 "reward": 0,
@@ -71,13 +72,21 @@ class Worker(mp.Process):
                 "info": info,
             }
         )
+        
+        if getenv_as_int("WAIT_FOR_FIRST_ACTION") > 0:
+            last_action = self.env.action_space.sample()
+        else:
+            last_action = self.worker_buffer.get()
+        
+        
+        
+        # asynchronous
         while self.running:
             dt = 0
             action = None
             while dt < 1 / self.data_rate:
                 start_time = time.monotonic()
                 action_to_be = None
-
                 try:
                     action_to_be = self.worker_buffer.get_nowait()
                 except:
@@ -85,17 +94,19 @@ class Worker(mp.Process):
 
                 if action_to_be is not None:
                     action = action_to_be
+                else:
+                    action = last_action
 
                 end_time = time.monotonic()
                 dt += end_time - start_time
-
-            if action is None:
-                action = self.env.action_space.sample()
-                if getenv_as_int("DEBUG") > 0:
-                    print("Random Action:", action)
-            else:
-                if getenv_as_int("DEBUG") > 0:
-                    print("Action:", action)
+            
+            # if action is None:
+            #     action = self.env.action_space.sample()
+            #     if getenv_as_int("DEBUG") > 0:
+            #         print("Random Action:", action)
+            # else:
+            #     if getenv_as_int("DEBUG") > 0:
+            #         print("Action:", action)
 
             payload = self.env.step(action)
             payload = {
