@@ -133,17 +133,27 @@ class EnvironmentWorker(Process):
 
         # Process loop
         while self.running:
-            try:
-                if len(self._env_buffer) == 0:
+            if get_env_as_int("TURN_BASED") > 0:
+                try:
+                    if len(self._env_buffer) == 0:
+                        continue
+                except:
+                    self.running = False
                     continue
-            except:
-                self.running = False
-                continue
 
-            if get_env_as_int("DEBUG") > 0:
-                print("Environment has something in buffer")
+                if get_env_as_int("DEBUG") > 0:
+                    print("Environment has something in buffer")
 
-            action = self._env_receive()
+            else:
+                start_time = time.monotonic()
+                action = self._env.action_space.sample()
+
+                while time.monotonic() - start_time < 1 / self._data_rate:
+                    if len(self._env_buffer) == 0:
+                        continue
+                    else:
+                        action = self._env_receive()
+
             if get_env_as_int("DEBUG") > 0:
                 print("Environment received action")
 
