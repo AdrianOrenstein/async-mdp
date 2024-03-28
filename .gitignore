@@ -1,3 +1,6 @@
 runs
 .ipynb_checkpoints
 data
+.DS_STORE
+wandb
+__pycache__

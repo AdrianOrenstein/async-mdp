@@ -13,18 +13,35 @@ import torch.optim as optim
 import tyro
 from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
+from src.asyncmdp import AsyncGymWrapper
 
 """
 poetry run python src/dqn.py \
-    --seed 1 \
+    --seed 4 \
+    --num-envs 1 \
     --env-id CartPole-v0 \
-    --total-timesteps 1_000_000
+    --total-timesteps 50_000
+    
+    
+poetry run python src/dqn.py \
+    --seed 1 \
+    --num-envs 1 \
+    --async-env \
+    --async-datarate 5000 \
+    --env-id CartPole-v0 \
+    --total-timesteps 50_000 \
+    --wandb-entity "the-orbital-mind" \
+    --wandb-project-name "async-mdp" \
+    --track
 """
-
 
 
 @dataclass
 class Args:
+    async_env: bool = False
+    """if toggled, the environment will be async"""
+    async_datarate: int = 2  # 2 Hz
+    """the data rate of the async environment"""
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
     """the name of this experiment"""
     seed: int = 1
@@ -79,7 +96,7 @@ class Args:
     """the frequency of training"""
 
 
-def make_env(env_id, seed, idx, capture_video, run_name):
+def make_env(env_id, seed, idx, capture_video, run_name, async_env, async_datarate):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
@@ -88,6 +105,9 @@ def make_env(env_id, seed, idx, capture_video, run_name):
             env = gym.make(env_id)
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env.action_space.seed(seed)
+
+        if async_env:
+            env = AsyncGymWrapper(env, data_rate=async_datarate)
 
         return env
 
@@ -158,7 +178,15 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     # env setup
     envs = gym.vector.SyncVectorEnv(
         [
-            make_env(args.env_id, args.seed + i, i, args.capture_video, run_name)
+            make_env(
+                args.env_id,
+                args.seed + i,
+                i,
+                args.capture_video,
+                run_name,
+                args.async_env,
+                args.async_datarate,
+            )
             for i in range(args.num_envs)
         ]
     )
@@ -178,7 +206,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         device,
         handle_timeout_termination=False,
     )
-    start_time = time.time()
+    start_time = time.monotonic()
 
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
@@ -243,10 +271,10 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                     writer.add_scalar(
                         "losses/q_values", old_val.mean().item(), global_step
                     )
-                    sps = int(global_step / (time.time() - start_time))
+                    sps = int(global_step / (time.monotonic() - start_time))
                     writer.add_scalar(
                         "charts/SPS",
-                        int(global_step / (time.time() - start_time)),
+                        int(global_step / (time.monotonic() - start_time)),
                         global_step,
                     )
 

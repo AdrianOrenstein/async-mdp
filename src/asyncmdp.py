@@ -27,16 +27,22 @@ def get_env_as_int(name, default: int = 0):
     return int(os.getenv(name, str(default)))
 
 
-class AsyncWrapper:
+import gym
+from multiprocessing import Manager
+from gym import spaces
+
+
+class AsyncGymWrapper(gym.Wrapper):
     def __init__(
         self,
-        env: gym.Env,
+        env,
         data_rate=2,
         agent_send_fn=stack_put,
         agent_receive_fn=stack_get,
         env_send_fn=queue_put,
         env_receive_fn=queue_get,
     ):
+        super().__init__(env)
         manager = Manager()
 
         # Initialize buffers
@@ -48,12 +54,11 @@ class AsyncWrapper:
         self._agent_receive = lambda: agent_receive_fn(self._agent_buffer)
 
         self._data_rate = data_rate
-        self._env = env
 
         self.worker = EnvironmentWorker(
             environment_buffer=self._env_buffer,
             agent_buffer=self._agent_buffer,
-            env=self._env,
+            env=self.env,
             data_rate=self._data_rate,
             env_send_fn=env_send_fn,
             env_receive_fn=env_receive_fn,
@@ -61,8 +66,8 @@ class AsyncWrapper:
 
         self.start()
 
-    def reset(self):
-        out = self._env.reset()
+    def reset(self, **kwargs):
+        out = super().reset(**kwargs)  # Reset the underlying env
         self.worker._timestep = 0
         return out
 
@@ -81,7 +86,7 @@ class AsyncWrapper:
         return self._agent_receive().values()
 
     def close(self):
-        self._env.close()
+        super().close()  # Make sure to close the underlying env as well
 
 
 class EnvironmentWorker(Process):
@@ -225,7 +230,7 @@ class EnvironmentWorker(Process):
 if __name__ == "__main__":
     data_rate = 100
     num_timestepisodes = 10
-    env_wrapper = AsyncWrapper(
+    env_wrapper = AsyncGymWrapper(
         gym.make("CartPole-v1"),
         data_rate=2,
     )
