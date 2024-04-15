@@ -43,9 +43,18 @@ poetry run python src/dqn.py \
     --num-envs 1 \
     --async-datarate 100 \
     --env-id CartPole-v0 \
-    --total-timesteps 25_000 \
+    --total-timesteps 30_000 \
     --wandb-entity "the-orbital-mind" \
     --wandb-project-name "async-mdp" \
+    --track
+    
+poetry run python src/dqn.py \
+    --seed 1 \
+    --num-envs 1 \
+    --env-id CartPole-v0 \
+    --total-timesteps 30_000 \
+    --wandb-entity "the-orbital-mind" \
+    --wandb-project-name "sync-mdp" \
     --track
 """
 
@@ -100,7 +109,7 @@ class Args:
     """the starting epsilon for exploration"""
     end_e: float = 0.05
     """the ending epsilon for exploration"""
-    exploration_fraction: float = 0.5
+    exploration_fraction: float = 0.25
     """the fraction of `total-timesteps` it takes from start-e to go end-e"""
     learning_starts: int = 10000
     """timestep to start learning"""
@@ -231,7 +240,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
             args.exploration_fraction * args.total_timesteps,
             agent_step,
         )
-        if random.random() < epsilon or agent_step < args.learning_starts:
+        if random.random() < epsilon:  # or agent_step < args.learning_starts
             actions = np.array(
                 [envs.single_action_space.sample() for _ in range(envs.num_envs)]
             )
@@ -337,14 +346,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
             float(end_time - dstart_time),
             agent_step,
         )
-
-    # turn off async worker
-    try:
-        envs.close()
-    except Exception as e:
-        print("Looks like the environment is not async")
-        print(e)
-        pass
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"

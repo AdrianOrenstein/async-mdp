@@ -53,21 +53,21 @@ def changing_datarate_for_DQN(
         "env-id": env_name,
         "total-timesteps": total_timesteps,
         "wandb-entity": "the-orbital-mind",
-        "wandb-project-name": "async-mdp-test",
+        "wandb-project-name": "async-mdp-performance-vs-steprate",
         "track": True,
     }
 
     # avg_rate_for_dqn = 9000  # sps
-    # for seed in range(0, num_seeds):
-    #     for data_rate in range(1000, 5000, 1000):
-    #         run_config = defaults.copy()
-    #         run_config.update({"seed": seed, "async-datarate": data_rate})
-    #         yield run_config
+    for seed in range(10, 30):
+        for data_rate in range(1500, 2500 + 100, 100):
+            run_config = defaults.copy()
+            run_config.update({"seed": seed, "async-datarate": data_rate})
+            yield run_config
 
-    for seed in range(0, num_seeds):
-        run_config = defaults.copy()
-        run_config.update({"seed": seed})
-        yield run_config
+    # for seed in range(0, num_seeds):
+    #     run_config = defaults.copy()
+    #     run_config.update({"seed": seed})
+    #     yield run_config
 
 
 if __name__ == "__main__":
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     all_jobs = {}
 
     for env_name in ["CartPole-v0"]:
-        for job_dic in EXPERIMENTS[experiment_name](env_name=env_name, num_seeds=3):
+        for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
             job_UID = f"{experiment_name.replace('_', '')}--" + convert_job_dic_to_key(
                 job_dic
             )
