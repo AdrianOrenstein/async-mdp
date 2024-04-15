@@ -15,6 +15,8 @@ from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
 from src.asyncmdp import AsyncGymWrapper
 
+from tqdm import tqdm
+
 """
 poetry run python src/dqn.py \
     --seed 4 \
@@ -26,10 +28,22 @@ poetry run python src/dqn.py \
 poetry run python src/dqn.py \
     --seed 1 \
     --num-envs 1 \
-    --async-env \
-    --async-datarate 5000 \
+    --async-datarate 100 \
     --env-id CartPole-v0 \
     --total-timesteps 50_000 \
+    --wandb-entity "the-orbital-mind" \
+    --wandb-project-name "test-async-mdp" \
+    --track
+    
+    
+    
+Experiment
+poetry run python src/dqn.py \
+    --seed 1 \
+    --num-envs 1 \
+    --async-datarate 100 \
+    --env-id CartPole-v0 \
+    --total-timesteps 25_000 \
     --wandb-entity "the-orbital-mind" \
     --wandb-project-name "async-mdp" \
     --track
@@ -38,9 +52,7 @@ poetry run python src/dqn.py \
 
 @dataclass
 class Args:
-    async_env: bool = False
-    """if toggled, the environment will be async"""
-    async_datarate: int = 2  # 2 Hz
+    async_datarate: int = -1  # 2 Hz
     """the data rate of the async environment"""
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
     """the name of this experiment"""
@@ -96,7 +108,7 @@ class Args:
     """the frequency of training"""
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, async_env, async_datarate):
+def make_env(env_id, seed, idx, capture_video, run_name, async_datarate):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
@@ -106,7 +118,7 @@ def make_env(env_id, seed, idx, capture_video, run_name, async_env, async_datara
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env.action_space.seed(seed)
 
-        if async_env:
+        if async_datarate > 0:
             env = AsyncGymWrapper(env, data_rate=async_datarate)
 
         return env
@@ -147,7 +159,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         )
     args = tyro.cli(Args)
     assert args.num_envs == 1, "vectorized envs are not supported at the moment"
-    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.monotonic())}"
     if args.track:
         import wandb
 
@@ -184,7 +196,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 i,
                 args.capture_video,
                 run_name,
-                args.async_env,
                 args.async_datarate,
             )
             for i in range(args.num_envs)
@@ -206,20 +217,21 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         device,
         handle_timeout_termination=False,
     )
-    start_time = time.monotonic()
 
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
 
-    for global_step in range(args.total_timesteps):
+    for agent_step in tqdm(range(args.total_timesteps)):
+        start_time = time.monotonic()
+        dstart_time = time.monotonic()
         # ALGO LOGIC: put action logic here
         epsilon = linear_schedule(
             args.start_e,
             args.end_e,
             args.exploration_fraction * args.total_timesteps,
-            global_step,
+            agent_step,
         )
-        if random.random() < epsilon:
+        if random.random() < epsilon or agent_step < args.learning_starts:
             actions = np.array(
                 [envs.single_action_space.sample() for _ in range(envs.num_envs)]
             )
@@ -231,18 +243,37 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
+        # print(f"{terminations=}, {'final_info' in infos=}")
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info and "episode" in info:
-                    print(
-                        f"global_step={global_step}, episodic_return={info['episode']['r']}"
+                    if "my_episodic_return" not in info.keys():
+                        my_episodic_return = info["episode"]["r"]
+                    else:
+                        my_episodic_return = info["my_episodic_return"]
+
+                    # print(
+                    #     f"agent_step={agent_step}, episodic_return={info['episode']['r'][0]}, my_episodic_return={my_episodic_return}"
+                    # )
+                    # if "logging_data" in info:
+                    #     avg_episodic_return_from_env = np.array(
+                    #         [dic.get("reward") for dic in info["logging_data"]]
+                    #     )
+                    # print(
+                    #     f"{avg_episodic_return_from_env.sum() == my_episodic_return=} {avg_episodic_return_from_env.sum()=} {my_episodic_return=} {info['global_environment_timestep']}"
+                    # )
+                    writer.add_scalar(
+                        "final/avg_episodic_return", my_episodic_return, agent_step
                     )
                     writer.add_scalar(
-                        "charts/episodic_return", info["episode"]["r"], global_step
+                        "final/episodic_length", info["episode"]["l"], agent_step
                     )
-                    writer.add_scalar(
-                        "charts/episodic_length", info["episode"]["l"], global_step
-                    )
+                    if "global_environment_timestep" in info:
+                        writer.add_scalar(
+                            "final/env_timestep",
+                            info["global_environment_timestep"],
+                            agent_step,
+                        )
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
         real_next_obs = next_obs.copy()
@@ -255,8 +286,8 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         obs = next_obs
 
         # ALGO LOGIC: training.
-        if global_step > args.learning_starts:
-            if global_step % args.train_frequency == 0:
+        if agent_step > args.learning_starts:
+            if agent_step % args.train_frequency == 0:
                 data = rb.sample(args.batch_size)
                 with torch.no_grad():
                     target_max, _ = target_network(data.next_observations).max(dim=1)
@@ -266,16 +297,10 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 old_val = q_network(data.observations).gather(1, data.actions).squeeze()
                 loss = F.mse_loss(td_target, old_val)
 
-                if global_step % 100 == 0:
-                    writer.add_scalar("losses/td_loss", loss, global_step)
+                if agent_step % 100 == 0:
+                    writer.add_scalar("agent_losses/td_loss", loss, agent_step)
                     writer.add_scalar(
-                        "losses/q_values", old_val.mean().item(), global_step
-                    )
-                    sps = int(global_step / (time.monotonic() - start_time))
-                    writer.add_scalar(
-                        "charts/SPS",
-                        int(global_step / (time.monotonic() - start_time)),
-                        global_step,
+                        "agent_losses/q_values", old_val.mean().item(), agent_step
                     )
 
                 # optimize the model
@@ -284,7 +309,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 optimizer.step()
 
             # update target network
-            if global_step % args.target_network_frequency == 0:
+            if agent_step % args.target_network_frequency == 0:
                 for target_network_param, q_network_param in zip(
                     target_network.parameters(), q_network.parameters()
                 ):
@@ -292,6 +317,34 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                         args.tau * q_network_param.data
                         + (1.0 - args.tau) * target_network_param.data
                     )
+
+        end_time = time.monotonic()
+        sps = agent_step / (end_time - start_time)
+        dsps = 1 / (end_time - dstart_time)
+
+        writer.add_scalar(
+            "charts/SPS",
+            float(sps),
+            agent_step,
+        )
+        writer.add_scalar(
+            "charts/incriment_SPS",
+            float(dsps),
+            agent_step,
+        )
+        writer.add_scalar(
+            "charts/delta_time",
+            float(end_time - dstart_time),
+            agent_step,
+        )
+
+    # turn off async worker
+    try:
+        envs.close()
+    except Exception as e:
+        print("Looks like the environment is not async")
+        print(e)
+        pass
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"

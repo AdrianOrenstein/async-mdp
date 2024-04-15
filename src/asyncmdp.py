@@ -115,7 +115,11 @@ class EnvironmentWorker(Process):
 
     def run(self):
         self._timestep = 0
+        self._global_timestep = 0
+        self._episodic_return = 0
         self.running = True
+
+        self._logging_data = []
 
         observation, info = self._env.reset()
         terminated = truncated = False
@@ -163,9 +167,31 @@ class EnvironmentWorker(Process):
                 print("Environment received action")
 
             observation, reward, terminated, truncated, info = self._env.step(action)
+            self._logging_data.append(
+                {
+                    "timestep": self._timestep,
+                    "reward": reward,
+                }
+            )
             self._timestep += 1
+            self._episodic_return += reward
 
-            info.update({"timestep": self._timestep})
+            info.update(
+                {
+                    "timestep": self._timestep,
+                    "my_episodic_return": self._episodic_return,
+                }
+            )
+
+            if terminated:
+                self._global_timestep += self._timestep
+                info.update(
+                    {
+                        "logging_data": self._logging_data,
+                        "global_environment_time": self._global_timestep,
+                    }
+                )
+
             payload = {
                 "observation": observation,
                 "reward": reward,
@@ -177,11 +203,17 @@ class EnvironmentWorker(Process):
             self._env_send(payload)
 
             if terminated:
+                self._episodic_return = 0
                 self._timestep = 0
                 observation, info = self._env.reset()
                 terminated = truncated = False
 
-                info.update({"timestep": self._timestep})
+                info.update(
+                    {
+                        "timestep": self._timestep,
+                        "my_episodic_return": self._episodic_return,
+                    }
+                )
                 self._env_send(
                     {
                         "observation": observation,
@@ -191,6 +223,8 @@ class EnvironmentWorker(Process):
                         "info": info,
                     }
                 )
+
+                self._logging_data = []
 
         # if get_env_as_int("WAIT_FOR_FIRST_ACTION") > 0:
         #     last_action = self._env.action_space.sample()
