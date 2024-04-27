@@ -771,17 +771,6 @@ files = [
 ]
 
 [[package]]
-name = "dataclasses"
-version = "0.6"
-description = "A backport of the dataclasses module for Python 3.6"
-optional = true
-python-versions = "*"
-files = [
-    {file = "dataclasses-0.6-py3-none-any.whl", hash = "sha256:454a69d788c7fda44efd71e259be79577822f5e3f53f029a22d08004e951dc9f"},
-    {file = "dataclasses-0.6.tar.gz", hash = "sha256:6988bd2b895eef432d562370bb707d540f32f7360ab13da45340101bc2307d84"},
-]
-
-[[package]]
 name = "debugpy"
 version = "1.8.1"
 description = "An implementation of the Debug Adapter Protocol for Python"
@@ -1093,28 +1082,6 @@ files = [
 
 [package.extras]
 tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipython", "littleutils", "pytest", "rich"]
-
-[[package]]
-name = "expt"
-version = "0.4.1"
-description = "EXperiment. Plot. Tabulate."
-optional = true
-python-versions = ">=3.6"
-files = [
-    {file = "expt-0.4.1.tar.gz", hash = "sha256:5006cc6197c814b38aa5ae1f7457078bac212c10b30f2d4a4a309c3c8a1d3b33"},
-]
-
-[package.dependencies]
-dataclasses = ">=0.6"
-matplotlib = ">=3.0.0"
-multiprocess = ">=0.70.12"
-numpy = ">=1.16.5"
-pandas = ">=1.0"
-scipy = "*"
-typeguard = ">=2.6.1"
-
-[package.extras]
-test = ["mock (>=2.0.0)", "pytest (>=5.0)", "pytest-asyncio", "pytest-cov", "tensorflow"]
 
 [[package]]
 name = "farama-notifications"
@@ -3146,32 +3113,6 @@ files = [
 numpy = "*"
 
 [[package]]
-name = "multiprocess"
-version = "0.70.14"
-description = "better multiprocessing and multithreading in python"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "multiprocess-0.70.14-pp37-pypy37_pp73-macosx_10_9_x86_64.whl", hash = "sha256:560a27540daef4ce8b24ed3cc2496a3c670df66c96d02461a4da67473685adf3"},
-    {file = "multiprocess-0.70.14-pp37-pypy37_pp73-manylinux_2_24_i686.whl", hash = "sha256:bfbbfa36f400b81d1978c940616bc77776424e5e34cb0c94974b178d727cfcd5"},
-    {file = "multiprocess-0.70.14-pp37-pypy37_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:89fed99553a04ec4f9067031f83a886d7fdec5952005551a896a4b6a59575bb9"},
-    {file = "multiprocess-0.70.14-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:40a5e3685462079e5fdee7c6789e3ef270595e1755199f0d50685e72523e1d2a"},
-    {file = "multiprocess-0.70.14-pp38-pypy38_pp73-manylinux_2_24_i686.whl", hash = "sha256:44936b2978d3f2648727b3eaeab6d7fa0bedf072dc5207bf35a96d5ee7c004cf"},
-    {file = "multiprocess-0.70.14-pp38-pypy38_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:e628503187b5d494bf29ffc52d3e1e57bb770ce7ce05d67c4bbdb3a0c7d3b05f"},
-    {file = "multiprocess-0.70.14-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:0d5da0fc84aacb0e4bd69c41b31edbf71b39fe2fb32a54eaedcaea241050855c"},
-    {file = "multiprocess-0.70.14-pp39-pypy39_pp73-manylinux_2_24_i686.whl", hash = "sha256:6a7b03a5b98e911a7785b9116805bd782815c5e2bd6c91c6a320f26fd3e7b7ad"},
-    {file = "multiprocess-0.70.14-pp39-pypy39_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:cea5bdedd10aace3c660fedeac8b087136b4366d4ee49a30f1ebf7409bce00ae"},
-    {file = "multiprocess-0.70.14-py310-none-any.whl", hash = "sha256:7dc1f2f6a1d34894c8a9a013fbc807971e336e7cc3f3ff233e61b9dc679b3b5c"},
-    {file = "multiprocess-0.70.14-py37-none-any.whl", hash = "sha256:93a8208ca0926d05cdbb5b9250a604c401bed677579e96c14da3090beb798193"},
-    {file = "multiprocess-0.70.14-py38-none-any.whl", hash = "sha256:6725bc79666bbd29a73ca148a0fb5f4ea22eed4a8f22fce58296492a02d18a7b"},
-    {file = "multiprocess-0.70.14-py39-none-any.whl", hash = "sha256:63cee628b74a2c0631ef15da5534c8aedbc10c38910b9c8b18dcd327528d1ec7"},
-    {file = "multiprocess-0.70.14.tar.gz", hash = "sha256:3eddafc12f2260d27ae03fe6069b12570ab4764ab59a75e81624fac453fbf46a"},
-]
-
-[package.dependencies]
-dill = ">=0.3.6"
-
-[[package]]
 name = "namex"
 version = "0.0.8"
 description = "A simple utility to separate the implementation of your Python package and its public API surface."
@@ -3365,29 +3306,6 @@ numpy = [
     {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
     {version = ">=1.19.3", markers = "platform_system == \"Linux\" and platform_machine == \"aarch64\" and python_version >= \"3.8\" and python_version < \"3.10\" or python_version > \"3.9\" and python_version < \"3.10\" or python_version >= \"3.9\" and platform_system != \"Darwin\" and python_version < \"3.10\" or python_version >= \"3.9\" and platform_machine != \"arm64\" and python_version < \"3.10\""},
 ]
-
-[[package]]
-name = "openrlbenchmark"
-version = "0.1.1b4"
-description = ""
-optional = true
-python-versions = ">=3.7.1,<4.0.0"
-files = [
-    {file = "openrlbenchmark-0.1.1b4-py3-none-any.whl", hash = "sha256:f012fdfbac560f3a0b0f825560635eeceaeb4f97c43996a19a8e2916b95f43cb"},
-    {file = "openrlbenchmark-0.1.1b4.tar.gz", hash = "sha256:497d48c5a8053d9aab89bc6eacafb547ecdb5371ff98f0c0504e731d715687b4"},
-]
-
-[package.dependencies]
-expt = ">=0.4.1,<0.5.0"
-importlib-metadata = ">=5.1.0,<6.0.0"
-multiprocess = ">=0.70.13,<0.71.0"
-pip = ">=22.1.2,<23.0.0"
-rich = "<12.0"
-seaborn = ">=0.12.1,<0.13.0"
-tabulate = ">=0.9.0,<0.10.0"
-tqdm = ">=4.65.0,<5.0.0"
-tueplots = ">=0.0.4,<0.0.5"
-wandb = ">=0.13.7,<0.14.0"
 
 [[package]]
 name = "opt-einsum"
@@ -3793,17 +3711,6 @@ files = [
 [package.extras]
 docs = ["furo", "olefile", "sphinx (>=2.4)", "sphinx-copybutton", "sphinx-inline-tabs", "sphinx-removed-in", "sphinxext-opengraph"]
 tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "packaging", "pyroma", "pytest", "pytest-cov", "pytest-timeout"]
-
-[[package]]
-name = "pip"
-version = "22.3.1"
-description = "The PyPA recommended tool for installing Python packages."
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "pip-22.3.1-py3-none-any.whl", hash = "sha256:908c78e6bc29b676ede1c4d57981d490cb892eb45cd8c214ab6298125119e077"},
-    {file = "pip-22.3.1.tar.gz", hash = "sha256:65fd48317359f3af8e593943e6ae1506b66325085ea64b706a998c6e83eeaf38"},
-]
 
 [[package]]
 name = "platformdirs"
@@ -4749,24 +4656,24 @@ test = ["asv", "gmpy2", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeo
 
 [[package]]
 name = "seaborn"
-version = "0.12.2"
+version = "0.13.2"
 description = "Statistical data visualization"
-optional = true
-python-versions = ">=3.7"
+optional = false
+python-versions = ">=3.8"
 files = [
-    {file = "seaborn-0.12.2-py3-none-any.whl", hash = "sha256:ebf15355a4dba46037dfd65b7350f014ceb1f13c05e814eda2c9f5fd731afc08"},
-    {file = "seaborn-0.12.2.tar.gz", hash = "sha256:374645f36509d0dcab895cba5b47daf0586f77bfe3b36c97c607db7da5be0139"},
+    {file = "seaborn-0.13.2-py3-none-any.whl", hash = "sha256:636f8336facf092165e27924f223d3c62ca560b1f2bb5dff7ab7fad265361987"},
+    {file = "seaborn-0.13.2.tar.gz", hash = "sha256:93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7"},
 ]
 
 [package.dependencies]
-matplotlib = ">=3.1,<3.6.1 || >3.6.1"
-numpy = ">=1.17,<1.24.0 || >1.24.0"
-pandas = ">=0.25"
+matplotlib = ">=3.4,<3.6.1 || >3.6.1"
+numpy = ">=1.20,<1.24.0 || >1.24.0"
+pandas = ">=1.2"
 
 [package.extras]
 dev = ["flake8", "flit", "mypy", "pandas-stubs", "pre-commit", "pytest", "pytest-cov", "pytest-xdist"]
-docs = ["ipykernel", "nbconvert", "numpydoc", "pydata_sphinx_theme (==0.10.0rc2)", "pyyaml", "sphinx-copybutton", "sphinx-design", "sphinx-issues"]
-stats = ["scipy (>=1.3)", "statsmodels (>=0.10)"]
+docs = ["ipykernel", "nbconvert", "numpydoc", "pydata_sphinx_theme (==0.10.0rc2)", "pyyaml", "sphinx (<6.0.0)", "sphinx-copybutton", "sphinx-design", "sphinx-issues"]
+stats = ["scipy (>=1.7)", "statsmodels (>=0.12)"]
 
 [[package]]
 name = "send2trash"
@@ -5147,20 +5054,6 @@ files = [
 gym = ">=0.22.0"
 pettingzoo = ">=1.15.0"
 tinyscaler = ">=1.0.4"
-
-[[package]]
-name = "tabulate"
-version = "0.9.0"
-description = "Pretty-print tabular data"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f"},
-    {file = "tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c"},
-]
-
-[package.extras]
-widechars = ["wcwidth"]
 
 [[package]]
 name = "tenacity"
@@ -5566,39 +5459,6 @@ potc = ["potc-treevalue (>=0.0.1)"]
 test = ["coverage (>=5)", "easydict (>=1.7,<2)", "flake8 (>=3.5,<4.0)", "hbutils (>=0.6.13)", "mock (>=4.0.3)", "numpy (>=1.10)", "pytest (>=6.2.5,<6.3.0)", "pytest-benchmark (>=3.4.0,<3.5.0)", "pytest-cov (>=3.0.0,<3.1.0)", "pytest-mock (>=3.6.1,<3.7.0)", "pytest-rerunfailures (>=10.2,<11.0)", "pytest-timeout (>=2.0.2,<2.1.0)", "pytest-xdist (>=1.34.0)", "setuptools (<=59.5.0)", "testtools (>=2)"]
 
 [[package]]
-name = "tueplots"
-version = "0.0.4"
-description = "Scientific plotting made easy"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "tueplots-0.0.4-py3-none-any.whl", hash = "sha256:9c90ea249155913820bbaa3ed1ec9b184fc4d9fdd39af958f5726bf83f364264"},
-]
-
-[package.dependencies]
-matplotlib = "*"
-numpy = "*"
-
-[package.extras]
-ci = ["tox"]
-examples = ["jupyter"]
-
-[[package]]
-name = "typeguard"
-version = "2.13.3"
-description = "Run-time type checker for Python"
-optional = true
-python-versions = ">=3.5.3"
-files = [
-    {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},
-    {file = "typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4"},
-]
-
-[package.extras]
-doc = ["sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
-test = ["mypy", "pytest", "typing-extensions"]
-
-[[package]]
 name = "types-protobuf"
 version = "4.23.0.1"
 description = "Typing stubs for protobuf"
@@ -5967,7 +5827,7 @@ c51-atari-jax = ["AutoROM", "ale-py", "flax", "jax", "jaxlib", "opencv-python"]
 c51-jax = ["flax", "jax", "jaxlib"]
 cloud = ["awscli", "boto3"]
 dm-control = ["dm-control", "h5py", "mujoco", "shimmy"]
-docs = ["markdown-include", "mkdocs-material", "openrlbenchmark"]
+docs = ["markdown-include", "mkdocs-material"]
 dqn = []
 dqn-atari = ["AutoROM", "ale-py", "opencv-python"]
 dqn-atari-jax = ["AutoROM", "ale-py", "flax", "jax", "jaxlib", "opencv-python"]
@@ -5987,4 +5847,4 @@ qdagger-dqn-atari-jax-impalacnn = ["AutoROM", "ale-py", "flax", "jax", "jaxlib",
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "df2792dd6d15cb5f57ea18ef62854e3e9000b252de278b4c242ee0a1d5ec7856"
+content-hash = "9f6875b1974db8039d31c0f7e0ff25d27a5a05c2713b8a853c54f7daa6514230"
