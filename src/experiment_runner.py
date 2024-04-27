@@ -1,18 +1,6 @@
 import itertools
 import os
 
-"""
-poetry run python src/dqn.py \
-    --seed 1 \
-    --num-envs 1 \
-    --async-datarate 5000 \
-    --env-id CartPole-v0 \
-    --total-timesteps 50_000 \
-    --wandb-entity "the-orbital-mind" \
-    --wandb-project-name "async-mdp-test" \
-    --track
-"""
-
 
 def convert_job_dic_to_key(job_dic: dict) -> str:
     job_params = []
@@ -37,8 +25,28 @@ def convert_job_dic_to_key(job_dic: dict) -> str:
     )
 
 
+def observing_steprate_over_training(
+    total_timesteps=50_000, num_envs=1, env_name="CartPole-v0", num_seeds=10
+):
+    defaults = {
+        "algo": "src/dqn.py",
+        "num-envs": num_envs,
+        "env-id": env_name,
+        "total-timesteps": total_timesteps,
+        "wandb-entity": "the-orbital-mind",
+        "wandb-project-name": "async-mdp-observe-steprate",
+        "track": True,
+    }
+
+    # avg_rate_for_dqn = 9000  # sps
+    for seed in range(0, 10):
+        run_config = defaults.copy()
+        run_config.update({"seed": seed})
+        yield run_config
+
+
 def changing_datarate_for_DQN(
-    total_timesteps=50_000, num_envs=1, env_name="CartPole-v0", num_seeds=5
+    total_timesteps=50_000, num_envs=1, env_name="CartPole-v0", num_seeds=10
 ):
     """
     We've computed the average datarate of DQN for the basic control environments which is about 9300 sps.
@@ -58,8 +66,8 @@ def changing_datarate_for_DQN(
     }
 
     # avg_rate_for_dqn = 9000  # sps
-    for seed in range(10, 30):
-        for data_rate in range(1500, 2500 + 100, 100):
+    for seed in range(0, 10):
+        for data_rate in range(1000, 1400 + 100, 100):
             run_config = defaults.copy()
             run_config.update({"seed": seed, "async-datarate": data_rate})
             yield run_config
@@ -72,7 +80,10 @@ def changing_datarate_for_DQN(
 
 if __name__ == "__main__":
     ENV_NAMES = ["CartPole-v1", "MountainCar-v0", "Acrobot-v1"]
-    EXPERIMENTS = {"changing_datarate_for_DQN": changing_datarate_for_DQN}
+    EXPERIMENTS = {
+        "observing_steprate_over_training": observing_steprate_over_training,
+        "changing_datarate_for_DQN": changing_datarate_for_DQN,
+    }
 
     experiment_name = "changing_datarate_for_DQN"
 

@@ -4,3 +4,5 @@ data
 .DS_STORE
 wandb
 __pycache__
+jobs.json
+wandb_cache
