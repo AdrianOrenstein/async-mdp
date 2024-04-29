@@ -116,6 +116,21 @@ class Args:
     train_frequency: int = 10
     """the frequency of training"""
 
+    """
+    poetry run python src/dqn.py --num-envs 1 --env-id MountainCar-v0 --total-timesteps 200_000 --wandb-entity the-orbital-mind --wandb-project-name async-mdp-performance-vs-steprate-mountaincar-v0 --track --seed 0 \
+    --buffer_size 10_000 \
+    --learning_rate 4e-3 \
+    --gamma 0.99  \
+    --target_network_frequency 600 \
+    --batch_size 128 \
+    --start_e 1 \
+    --end_e 0.07 \
+    --exploration_fraction 0.2 \
+    --learning_starts 1_000 \
+    --train_frequency 16
+    1.2e5 = 120,000
+    """
+
 
 def make_env(env_id, seed, idx, capture_video, run_name, async_datarate):
     def thunk():
@@ -230,6 +245,10 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
 
+    episodic_return_running_avg = 0
+    episodic_return_running_length = 0
+
+    number_of_times_logged = 0
     for agent_step in tqdm(range(args.total_timesteps)):
         start_time = time.monotonic()
         dstart_time = time.monotonic()
@@ -252,37 +271,15 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
-        # print(f"{terminations=}, {'final_info' in infos=}")
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info and "episode" in info:
-                    if "my_episodic_return" not in info.keys():
-                        my_episodic_return = info["episode"]["r"]
-                    else:
-                        my_episodic_return = info["my_episodic_return"]
-
-                    # print(
-                    #     f"agent_step={agent_step}, episodic_return={info['episode']['r'][0]}, my_episodic_return={my_episodic_return}"
-                    # )
-                    # if "logging_data" in info:
-                    #     avg_episodic_return_from_env = np.array(
-                    #         [dic.get("reward") for dic in info["logging_data"]]
-                    #     )
-                    # print(
-                    #     f"{avg_episodic_return_from_env.sum() == my_episodic_return=} {avg_episodic_return_from_env.sum()=} {my_episodic_return=} {info['global_environment_timestep']}"
-                    # )
                     writer.add_scalar(
-                        "final/avg_episodic_return", my_episodic_return, agent_step
+                        "charts/episodic_return", info["episode"]["r"], agent_step
                     )
                     writer.add_scalar(
-                        "final/episodic_length", info["episode"]["l"], agent_step
+                        "charts/episodic_length", info["episode"]["l"], agent_step
                     )
-                    if "global_environment_timestep" in info:
-                        writer.add_scalar(
-                            "final/env_timestep",
-                            info["global_environment_timestep"],
-                            agent_step,
-                        )
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
         real_next_obs = next_obs.copy()
@@ -331,21 +328,17 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         sps = agent_step / (end_time - start_time)
         dsps = 1 / (end_time - dstart_time)
 
-        writer.add_scalar(
-            "charts/SPS",
-            float(sps),
-            agent_step,
-        )
-        writer.add_scalar(
-            "charts/incriment_SPS",
-            float(dsps),
-            agent_step,
-        )
-        writer.add_scalar(
-            "charts/delta_time",
-            float(end_time - dstart_time),
-            agent_step,
-        )
+        if agent_step % 100 == 0:
+            writer.add_scalar(
+                "charts/incriment_SPS",
+                float(dsps),
+                agent_step,
+            )
+            writer.add_scalar(
+                "charts/delta_time",
+                float(end_time - dstart_time),
+                agent_step,
+            )
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"

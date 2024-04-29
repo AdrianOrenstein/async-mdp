@@ -1,7 +1,7 @@
 import os
 import time
 from multiprocessing import Manager, Process
-
+from loguru import logger
 import gymnasium as gym
 
 
@@ -86,6 +86,15 @@ class AsyncGymWrapper(gym.Wrapper):
         return self._agent_receive().values()
 
     def close(self):
+        self.worker.terminate()
+        self.worker.running = False
+        time.sleep(0.1)
+        try:
+            self.worker.close()
+        except Exception as e:
+            logger.error(f"Error closing environment worker: {e}")
+            pass
+        del self.worker
         super().close()  # Make sure to close the underlying env as well
 
 
@@ -183,7 +192,7 @@ class EnvironmentWorker(Process):
                 }
             )
 
-            if terminated:
+            if terminated or truncated:
                 self._global_timestep += self._timestep
                 info.update(
                     {
@@ -200,13 +209,19 @@ class EnvironmentWorker(Process):
                 "info": info,
             }
 
-            self._env_send(payload)
+            try:
+                self._env_send(payload)
+            except Exception as e:
+                print(e)
+                self.running = False
+                continue
 
-            if terminated:
+            if terminated or truncated:
                 self._episodic_return = 0
                 self._timestep = 0
                 observation, info = self._env.reset()
-                terminated = truncated = False
+                terminated = False
+                truncated = False
 
                 info.update(
                     {
