@@ -142,7 +142,7 @@ def make_env(env_id, seed, idx, capture_video, run_name, async_datarate):
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env.action_space.seed(seed)
 
-        if async_datarate > 0:
+        if async_datarate >= 0:
             env = AsyncGymWrapper(env, data_rate=async_datarate)
 
         return env
@@ -328,7 +328,8 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         sps = agent_step / (end_time - start_time)
         dsps = 1 / (end_time - dstart_time)
 
-        if agent_step % 100 == 0:
+        # give time for jit
+        if (agent_step > 3) and (agent_step % 100 == 0):
             writer.add_scalar(
                 "charts/incriment_SPS",
                 float(dsps),

@@ -1,5 +1,6 @@
 import itertools
 import os
+from loguru import logger
 
 
 def convert_job_dic_to_key(job_dic: dict) -> str:
@@ -61,52 +62,73 @@ def changing_datarate_for_DQN(
         "env-id": env_name,
         "total-timesteps": total_timesteps,
         "wandb-entity": "the-orbital-mind",
-        "wandb-project-name": "async-mdp-performance-vs-steprate"
-        + "-"
-        + env_name.lower(),
+        "wandb-project-name": "-".join(
+            ["async-mdp-performance-vs-steprate", env_name.lower()]
+        ),
         "track": True,
     }
 
-    algo_kwargs = {
-        "MountainCar-v0": {
-            "total-timesteps": 300_000,
-            "buffer_size": 10_000,
-            "learning_rate": 4e-3,
-            "gamma": 0.99,
-            "target_network_frequency": 600,
-            "batch_size": 128,
-            "start_e": 1,
-            "end_e": 0.07,
-            "exploration_fraction": 0.2,
-            "learning_starts": 1_000,
-            "train_frequency": 16,
-        },
-        "CartPole-v1": {
-            "total-timesteps": 100_000,
-            "buffer_size": 10_000,
+    # DQN hyperparams
+    defaults.update(
+        {
             "learning_rate": 2.5e-4,
+            "buffer_size": 10_000,
             "gamma": 0.99,
             "target_network_frequency": 500,
             "batch_size": 128,
             "start_e": 1,
-            "end_e": 0.05,
+            "end_e": 0.00,
             "exploration_fraction": 0.25,
             "learning_starts": 10_000,
             "train_frequency": 10,
+        }
+    )
+
+    algo_kwargs = {
+        "MountainCar-v0": {
+            "total-timesteps": 300_000,
+            # "learning_rate": 4e-3,
+            # "gamma": 0.99,
+            # "target_network_frequency": 600,
+            # "end_e": 0.07,
+            # "exploration_fraction": 0.2,
+            # "learning_starts": 1_000,
+            # "train_frequency": 16,
+        },
+        "CartPole-v1": {
+            "total-timesteps": 300_000,
+        },
+        "Acrobot-v1": {
+            "total-timesteps": 300_000,
         },
     }
 
-    # avg_rate_for_dqn = 9000  # sps
+    def experiment_run(defaults, seed, data_rate):
+        run_config = defaults.copy()
+
+        # copy over env specific params
+        if env_name in algo_kwargs:
+            run_config.update(algo_kwargs[env_name])
+
+            # update project name because we're changing the problem
+            run_config["wandb-project-name"] = "-".join(
+                [
+                    run_config["wandb-project-name"],
+                    str(algo_kwargs[env_name].get("total-timesteps")),
+                ]
+            )
+
+        run_config.update({"seed": seed, "async-datarate": data_rate})
+
+        yield run_config
+
+    # Using AsyncWrapper, 0 = env waits for the agent.
+    for seed in range(0, num_seeds):
+        yield from experiment_run(defaults=defaults, seed=seed, data_rate=0)
+
     for seed in range(0, num_seeds):
         for data_rate in range(1000, 3000 + 100, 100):
-            run_config = defaults.copy()
-            # copy over env specific params
-            if env_name in algo_kwargs:
-                run_config.update(algo_kwargs[env_name])
-
-            run_config.update({"seed": seed, "async-datarate": data_rate})
-
-            yield run_config
+            yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
     # for seed in range(0, num_seeds):
     #     run_config = defaults.copy()
@@ -125,7 +147,7 @@ if __name__ == "__main__":
 
     all_jobs = {}
 
-    for env_name in ["MountainCar-v0"]:
+    for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
             job_UID = f"{experiment_name.replace('_', '')}--" + convert_job_dic_to_key(
                 job_dic
@@ -168,13 +190,22 @@ if __name__ == "__main__":
     # Run all jobs that are not marked as completed
     for job_UID, job_dic in all_jobs.items():
         if job_UID not in completed_jobs:
-            print(f"Running job {job_UID}")
+
+            logger.info(f"Running job {job_UID}")
             print(f"\t{job_dic['command']}")
-            subprocess.run(job_dic["command"], shell=True)
+            process = subprocess.run(
+                job_dic["command"], shell=True, check=True, capture_output=True
+            )
+
             # Mark the job as completed
-            completed_jobs[job_UID] = True
+            completed_jobs[job_UID] = process.returncode
+
             # Write the updated completion status to the JSON file
             with open("jobs.json", "w") as f:
                 json.dump(completed_jobs, f)
+
+            logger.success(
+                f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
+            )
         else:
-            print(f"Skipping completed job {job_UID}")
+            logger.success(f"Skipping completed job {job_UID}")
