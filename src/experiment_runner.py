@@ -207,5 +207,6 @@ if __name__ == "__main__":
             logger.success(
                 f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
             )
+
         else:
-            logger.success(f"Skipping completed job {job_UID}")
+            logger.info(f"Skipping completed job {job_UID}")
