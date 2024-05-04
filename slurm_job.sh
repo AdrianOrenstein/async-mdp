@@ -42,9 +42,10 @@ echo "Exporting env variables" && \
 
 echo "Running experiment..." && \ 
     cd $SLURM_TMPDIR/project && \ 
-    WANDB_MODE=offline $python_venv $@ && \ 
-    echo "Syncing wandb..." && \ 
-    $python_venv -m wandb sync $SLURM_TMPDIR/project/wandb/
+    $python_venv $@ 
+    # && \ 
+    # echo "Syncing wandb..." && \ 
+    # $python_venv -m wandb sync $SLURM_TMPDIR/project/wandb/
 
 # WANDB_MODE=offline $python_venv src/dqn.py --num-envs 1 --env-id CartPole-v1 --total-timesteps 10_000 --wandb-entity the-orbital-mind --wandb-project-name beluga-async-mdp-performance-vs-steprate-cartpole-v1-300000 --track --learning_rate 0.00025 --buffer_size 10000 --gamma 0.99 --target_network_frequency 500 --batch_size 128 --start_e 1 --end_e 0.0 --exploration_fraction 0.25 --learning_starts 10000 --train_frequency 10 --seed 0 --async-datarate 1000 && \ 
 

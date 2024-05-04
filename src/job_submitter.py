@@ -63,7 +63,11 @@ def changing_datarate_for_DQN(
         "total-timesteps": total_timesteps,
         "wandb-entity": "the-orbital-mind",
         "wandb-project-name": "-".join(
-            [os.getenv("SLURM_CLUSTERID") or "na", "async-mdp-performance-vs-steprate", env_name.lower()]
+            [
+                os.getenv("SLURM_CLUSTERID") or "na",
+                "async-mdp-performance-vs-steprate",
+                env_name.lower(),
+            ]
         ),
         "track": True,
     }
@@ -206,9 +210,7 @@ if __name__ == "__main__":
             # if os.getenv("IS_SLURM"):
             # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
             # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
-            job_dic["command"] = (
-                f"sbatch --job-name={job_UID} ./slurm_job.sh {job_dic['command']}"
-            )
+            job_dic["command"] = f"sbatch ./slurm_job.sh {job_dic['command']}"
             print(f"\t{job_dic['command']}")
 
             # logger.info(f"Running job {job_UID}")
@@ -231,3 +233,5 @@ if __name__ == "__main__":
 
         else:
             print(f"Skipping completed job {job_UID}")
+
+# SLURM_CLUSTERID=beluga python src/job_submitter.py
