@@ -1,7 +1,6 @@
 import itertools
 import math
 import os
-from loguru import logger
 
 
 def convert_job_dic_to_key(job_dic: dict) -> str:
@@ -206,7 +205,7 @@ if __name__ == "__main__":
             # check if we're on the slurm cluster
             # if os.getenv("IS_SLURM"):
             # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
-            # logger.info(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
+            # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
             job_dic["command"] = (
                 f"sbatch --job-name={job_UID} ./job.sh {job_dic['command']}"
             )
@@ -225,10 +224,10 @@ if __name__ == "__main__":
             # with open("jobs.json", "w") as f:
             #     json.dump(completed_jobs, f)
 
-            # logger.success(
+            # print(
             #     f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
             # )
             break
 
         else:
-            logger.info(f"Skipping completed job {job_UID}")
+            print(f"Skipping completed job {job_UID}")
