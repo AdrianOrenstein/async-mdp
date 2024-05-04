@@ -63,7 +63,7 @@ def changing_datarate_for_DQN(
         "total-timesteps": total_timesteps,
         "wandb-entity": "the-orbital-mind",
         "wandb-project-name": "-".join(
-            ["async-mdp-performance-vs-steprate", env_name.lower()]
+            [os.getenv("SLURM_CLUSTERID") or "na", "async-mdp-performance-vs-steprate", env_name.lower()]
         ),
         "track": True,
     }
