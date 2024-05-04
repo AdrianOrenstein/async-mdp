@@ -213,22 +213,22 @@ if __name__ == "__main__":
             job_dic["command"] = f"sbatch ./slurm_job.sh {job_dic['command']}"
             print(f"\t{job_dic['command']}")
 
-            # logger.info(f"Running job {job_UID}")
+            print(f"Submitting job {job_UID}")
             # print(f"\t{job_dic['command']}")
-            # process = subprocess.run(
-            #     job_dic["command"], shell=True, check=True, capture_output=True
-            # )
+            process = subprocess.run(
+                job_dic["command"], shell=True, check=True, capture_output=True
+            )
 
-            # # Mark the job as completed
-            # completed_jobs[job_UID] = process.returncode
+            # Mark the job as completed
+            completed_jobs[job_UID] = process.returncode
 
-            # # Write the updated completion status to the JSON file
-            # with open("jobs.json", "w") as f:
-            #     json.dump(completed_jobs, f)
+            # Write the updated completion status to the JSON file
+            with open("jobs.json", "w") as f:
+                json.dump(completed_jobs, f)
 
-            # print(
-            #     f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
-            # )
+            print(
+                f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
+            )
             break
 
         else:
