@@ -1,4 +1,5 @@
 import itertools
+import math
 import os
 from loguru import logger
 
@@ -136,6 +137,13 @@ def changing_datarate_for_DQN(
     #     yield run_config
 
 
+def seconds_to_hms(seconds: float):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+
 if __name__ == "__main__":
     ENV_NAMES = ["CartPole-v1", "MountainCar-v0", "Acrobot-v1"]
     EXPERIMENTS = {
@@ -153,10 +161,14 @@ if __name__ == "__main__":
                 job_dic
             )
 
+            run_list = ["poetry", "run", "python", job_dic["algo"]]
+            if os.getenv("SLURM_CLUSTERID"):
+                run_list = [job_dic["algo"]]
+
             job_dic.update(
                 {
                     "command": " ".join(
-                        ["poetry", "run", "python", job_dic["algo"]]
+                        run_list
                         + [
                             f"--{k} {v}" if type(v) != bool else f"--{k}"
                             for k, v in job_dic.items()
@@ -190,30 +202,33 @@ if __name__ == "__main__":
     # Run all jobs that are not marked as completed
     for job_UID, job_dic in all_jobs.items():
         if job_UID not in completed_jobs:
-            
+
             # check if we're on the slurm cluster
-            if os.getenv("SLURM_JOB_ID"):
-                job_dic["command"] = f"srun --job-name={job_UID} {job_dic['command']}"
-            
-
-            logger.info(f"Running job {job_UID}")
+            # if os.getenv("IS_SLURM"):
+            # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
+            # logger.info(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
+            job_dic["command"] = (
+                f"sbatch --job-name={job_UID} ./job.sh {job_dic['command']}"
+            )
             print(f"\t{job_dic['command']}")
-            process = subprocess.run(
-                job_dic["command"], shell=True, check=True, capture_output=True
-            )
 
-            # Mark the job as completed
-            completed_jobs[job_UID] = process.returncode
+            # logger.info(f"Running job {job_UID}")
+            # print(f"\t{job_dic['command']}")
+            # process = subprocess.run(
+            #     job_dic["command"], shell=True, check=True, capture_output=True
+            # )
 
-            # Write the updated completion status to the JSON file
-            with open("jobs.json", "w") as f:
-                json.dump(completed_jobs, f)
+            # # Mark the job as completed
+            # completed_jobs[job_UID] = process.returncode
 
-            logger.success(
-                f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
-            )
+            # # Write the updated completion status to the JSON file
+            # with open("jobs.json", "w") as f:
+            #     json.dump(completed_jobs, f)
+
+            # logger.success(
+            #     f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
+            # )
+            break
 
         else:
             logger.info(f"Skipping completed job {job_UID}")
-
-
