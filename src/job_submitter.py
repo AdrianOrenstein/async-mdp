@@ -207,7 +207,7 @@ if __name__ == "__main__":
             # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
             # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
             job_dic["command"] = (
-                f"sbatch --job-name={job_UID} ./job.sh {job_dic['command']}"
+                f"sbatch --job-name={job_UID} ./slurm_job.sh {job_dic['command']}"
             )
             print(f"\t{job_dic['command']}")
 
