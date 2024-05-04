@@ -6,6 +6,8 @@
 
 # setup and tear down takes .5-2 minutes.
 
+module load python/3.10.13
+
 if [ "$SLURM_TMPDIR" == "" ]; then
     exit 1
 fi 
@@ -17,10 +19,6 @@ echo "Copying virtualenv..." && \
     cd $SLURM_TMPDIR && \ 
     tar -xzf venv.tar.gz && \ 
     rm venv.tar.gz &
-
-echo "Setting up modules..." && \ 
-    module load python/3.10.13 && \ 
-    poetry config virtualenvs.path $SLURM_TMPDIR/virtualenvs &
 
 echo "Setting up SOCKS5 proxy..." && \ 
     ssh -q -N -T -f -D 8888 `echo $SSH_CONNECTION | cut -d " " -f 3` && \ 

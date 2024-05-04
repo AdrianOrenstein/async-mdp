@@ -212,7 +212,7 @@ if __name__ == "__main__":
             # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
             # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
             job_dic["command"] = (
-                f"sbatch --job-name {job_UID} --time 00:30:00 --job ./slurm_job.sh {job_dic['command']}"
+                f"sbatch --job-name {job_UID} --time 00:30:00 ./slurm_job.sh {job_dic['command']}"
             )
 
             print(f"Submitting job {job_UID}")
