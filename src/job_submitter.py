@@ -210,8 +210,10 @@ if __name__ == "__main__":
             # if os.getenv("IS_SLURM"):
             # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
             # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
-            job_dic["command"] = f"sbatch ./slurm_job.sh {job_dic['command']}"
-            print(f"\t{job_dic['command']}")
+            # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
+            job_dic["command"] = (
+                f"sbatch --job_id {job_UID} --time 00:30:00 --job ./slurm_job.sh {job_dic['command']}"
+            )
 
             print(f"Submitting job {job_UID}")
             # print(f"\t{job_dic['command']}")
@@ -229,7 +231,6 @@ if __name__ == "__main__":
             print(
                 f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
             )
-            break
 
         else:
             print(f"Skipping completed job {job_UID}")
