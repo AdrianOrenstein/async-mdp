@@ -190,6 +190,11 @@ if __name__ == "__main__":
     # Run all jobs that are not marked as completed
     for job_UID, job_dic in all_jobs.items():
         if job_UID not in completed_jobs:
+            
+            # check if we're on the slurm cluster
+            if os.getenv("SLURM_JOB_ID"):
+                job_dic["command"] = f"srun --job-name={job_UID} {job_dic['command']}"
+            
 
             logger.info(f"Running job {job_UID}")
             print(f"\t{job_dic['command']}")
