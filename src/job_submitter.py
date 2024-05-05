@@ -130,9 +130,9 @@ def changing_datarate_for_DQN(
     for seed in range(0, num_seeds):
         yield from experiment_run(defaults=defaults, seed=seed, data_rate=0)
 
-    # for seed in range(0, num_seeds):
-    #     for data_rate in range(500, 3000 + 100, 100):
-    #         yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
+    for seed in range(0, num_seeds):
+        for data_rate in range(100, 1000 + 100, 100):
+            yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
     # for seed in range(0, num_seeds):
     #     run_config = defaults.copy()
