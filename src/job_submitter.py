@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
     all_jobs = {}
 
-    for env_name in ENV_NAMES:
+    for env_name in ["CartPole-v1"]:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
             job_UID = f"{experiment_name.replace('_', '')}--" + convert_job_dic_to_key(
                 job_dic
