@@ -130,9 +130,9 @@ def changing_datarate_for_DQN(
     for seed in range(0, num_seeds):
         yield from experiment_run(defaults=defaults, seed=seed, data_rate=0)
 
-    for seed in range(0, num_seeds):
-        for data_rate in range(1000, 3000 + 100, 100):
-            yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
+    # for seed in range(0, num_seeds):
+    #     for data_rate in range(500, 3000 + 100, 100):
+    #         yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
     # for seed in range(0, num_seeds):
     #     run_config = defaults.copy()
@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
     all_jobs = {}
 
-    for env_name in ["CartPole-v1"]:
+    for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
             job_UID = f"{experiment_name.replace('_', '')}--" + convert_job_dic_to_key(
                 job_dic
