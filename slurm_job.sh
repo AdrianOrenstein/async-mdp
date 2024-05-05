@@ -2,7 +2,7 @@
 #SBATCH --account=def-mbowling
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=0-2:00
+#SBATCH --time=0-2:59
 
 # setup and tear down takes .5-2 minutes.
 
