@@ -160,8 +160,11 @@ if __name__ == "__main__":
 
     for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
-            job_UID = f"{experiment_name.replace('_', '')}--" + convert_job_dic_to_key(
-                job_dic
+            job_UID = (
+                os.getenv("SLURM_CLUSTERID")
+                + "-"
+                + f"{experiment_name.replace('_', '')}--"
+                + convert_job_dic_to_key(job_dic)
             )
 
             run_list = ["poetry", "run", "python", job_dic["algo"]]
