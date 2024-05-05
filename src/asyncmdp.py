@@ -147,9 +147,7 @@ class EnvironmentWorker(Process):
                     else:
                         action = self._env_receive()
 
-            self._env_send(self._env.step(action))
             data = self._env.step(action)
-
             self._env_send(data)
 
             terminated, truncated = data[2], data[3]
