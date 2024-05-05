@@ -123,31 +123,9 @@ class EnvironmentWorker(Process):
         return self._env_receive_fn(self._env_buffer)
 
     def run(self):
-        self._timestep = 0
-        self._global_timestep = 0
-        self._episodic_return = 0
         self.running = True
 
-        self._logging_data = []
-
-        observation, info = self._env.reset()
-        terminated = truncated = False
-
-        info.update({"timestep": self._timestep})
-
-        if get_env_as_int("DEBUG") > 0:
-            print("Environment sending data")
-        self._env_send(
-            {
-                "observation": observation,
-                "reward": 0,
-                "terminated": terminated,
-                "truncated": truncated,
-                "info": info,
-            },
-        )
-        if get_env_as_int("DEBUG") > 0:
-            print("Environment sent data")
+        self._env_send(self._env.reset())
 
         # Process loop
         while self.running:
@@ -155,7 +133,6 @@ class EnvironmentWorker(Process):
 
             if self._data_rate == 0:
                 while len(self._env_buffer) == 0:
-                    _ = time.monotonic() - start_time
                     continue
                 action = self._env_receive()
 
@@ -168,102 +145,7 @@ class EnvironmentWorker(Process):
                     else:
                         action = self._env_receive()
 
-            if get_env_as_int("DEBUG") > 0:
-                print("Environment received action")
-
-            observation, reward, terminated, truncated, info = self._env.step(action)
-            self._logging_data.append(
-                {
-                    "timestep": self._timestep,
-                    "reward": reward,
-                }
-            )
-            self._timestep += 1
-            self._episodic_return += reward
-
-            info.update(
-                {
-                    "timestep": self._timestep,
-                    "my_episodic_return": self._episodic_return,
-                }
-            )
-
-            if terminated or truncated:
-                self._global_timestep += self._timestep
-                info.update(
-                    {
-                        "logging_data": self._logging_data,
-                        "global_environment_time": self._global_timestep,
-                    }
-                )
-
-            payload = {
-                "observation": observation,
-                "reward": reward,
-                "terminated": terminated,
-                "truncated": truncated,
-                "info": info,
-            }
-
-            self._env_send(payload)
-
-            if terminated or truncated:
-                self._episodic_return = 0
-                self._timestep = 0
-                observation, info = self._env.reset()
-                terminated = False
-                truncated = False
-
-                info.update(
-                    {
-                        "timestep": self._timestep,
-                        "my_episodic_return": self._episodic_return,
-                    }
-                )
-                self._env_send(
-                    {
-                        "observation": observation,
-                        "reward": 0,
-                        "terminated": terminated,
-                        "truncated": truncated,
-                        "info": info,
-                    }
-                )
-
-                self._logging_data = []
-
-        # if get_env_as_int("WAIT_FOR_FIRST_ACTION") > 0:
-        #     last_action = self._env.action_space.sample()
-        # else:
-        #     while len(self._env_buffer) == 0:
-        #         pass
-        #     last_action = self._env_buffer.pop(0)
-
-        # total_reward = 0
-        # step_rate_of_agent = 2
-        # dt = 0
-
-        # while self.running:
-        #     action_to_be = self._env_buffer.pop(0)
-        #     dt += 1 / step_rate_of_agent
-
-        #     payload = self._env.step(action)
-        #     payload = {
-        #         "observation": payload[0],
-        #         "reward": payload[1],
-        #         "terminated": payload[2],
-        #         "truncated": payload[3],
-        #         "info": payload[4],
-        #     }
-
-        #     total_reward += payload.get("reward")
-        #     payload["info"].update(
-        #         {"total_reward": total_reward, "timestep": self._timestep}
-        #     )
-
-        #     self._agent_buffer.put(payload)
-
-        #     self._timestep += 1
+            self._env_send(self._env.step(action))
 
 
 # Example usage
