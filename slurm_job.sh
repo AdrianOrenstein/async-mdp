@@ -12,7 +12,7 @@ if [ "$SLURM_TMPDIR" == "" ]; then
     exit 1
 fi 
 
-cp /home/aorenste/projects/def-mbowling/aorenste/
+cd /home/aorenste/projects/def-mbowling/aorenste/
 
 echo "Copying virtualenv..."
 cp ~/projects/def-mbowling/aorenste/venv.tar.gz $SLURM_TMPDIR/
