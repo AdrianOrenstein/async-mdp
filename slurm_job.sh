@@ -31,10 +31,8 @@ git clone --quiet https://github.com/AdrianOrenstein/async-mdp.git $SLURM_TMPDIR
 # wait for background jobs to complete
 echo "Waiting for background jobs to complete..."
 
-cd $SLURM_TMPDIR/project
-
 echo "Exporting env variables"
-export PYTHONPATH=./src:.
+export PYTHONPATH=$SLURM_TMPDIR/project/src:.
 export python_venv=$SLURM_TMPDIR/virtualenvs/async-mdp-PEBw-NfQ-py3.10/bin/python3.10
 
 echo "Running experiment..."

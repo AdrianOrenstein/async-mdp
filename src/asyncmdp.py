@@ -125,7 +125,9 @@ class EnvironmentWorker(Process):
     def run(self):
         self.running = True
 
-        self._env_send(self._env.reset())
+        (observation, info) = self._env.reset()
+        
+        self._env_send((observation, 0, False, False, info))
 
         # Process loop
         while self.running:
@@ -146,6 +148,17 @@ class EnvironmentWorker(Process):
                         action = self._env_receive()
 
             self._env_send(self._env.step(action))
+            data = self._env.step(action)
+            
+            self._env_send(data)
+            
+            terminated, truncated = data[2], data[3]
+
+            if terminated or truncated:
+                (observation, info) = self._env.reset()
+                self._env_send((observation, 0, False, False, info))
+                
+            
 
 
 # Example usage
