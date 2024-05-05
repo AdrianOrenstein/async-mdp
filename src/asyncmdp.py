@@ -83,7 +83,7 @@ class AsyncGymWrapper(gym.Wrapper):
         while len(self._agent_buffer) == 0:
             pass
 
-        return self._agent_receive().values()
+        return self._agent_receive()
 
     def close(self):
         self.worker.terminate()
