@@ -65,7 +65,9 @@ class AsyncGymWrapper(gym.Wrapper):
 
         if self.repeat_actions is None:
             repeated_actions = math.floor(
-                self.environment_sps / (1 / self._seconds_since_last_action)
+                self.environment_sps
+                * self._seconds_since_last_action
+                # self.environment_sps / (1 / self._seconds_since_last_action)
             )
         else:
             repeated_actions = self.repeat_actions
