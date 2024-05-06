@@ -32,7 +32,7 @@ from multiprocessing import Manager
 from gym import spaces
 
 
-class AsyncGymWrapper(gym.Wrapper):
+class AsyncGymWrapper:
     def __init__(
         self,
         env,
@@ -42,7 +42,6 @@ class AsyncGymWrapper(gym.Wrapper):
         env_send_fn=queue_put,
         env_receive_fn=queue_get,
     ):
-        super().__init__(env)
         manager = Manager()
 
         # Initialize buffers
@@ -58,7 +57,7 @@ class AsyncGymWrapper(gym.Wrapper):
         self.worker = EnvironmentWorker(
             environment_buffer=self._env_buffer,
             agent_buffer=self._agent_buffer,
-            env=self.env,
+            env=env,
             data_rate=self._data_rate,
             env_send_fn=env_send_fn,
             env_receive_fn=env_receive_fn,
@@ -68,7 +67,6 @@ class AsyncGymWrapper(gym.Wrapper):
 
     def reset(self, **kwargs):
         out = super().reset(**kwargs)  # Reset the underlying env
-        self.worker._timestep = 0
         return out
 
     def start(self):
@@ -131,7 +129,7 @@ class EnvironmentWorker(Process):
 
         # Process loop
         while self.running:
-            start_time = time.monotonic()
+            start_time = time.time()
 
             if self._data_rate == 0:
                 while len(self._env_buffer) == 0:
@@ -141,7 +139,7 @@ class EnvironmentWorker(Process):
             else:
                 action = self._env.action_space.sample()
 
-                while (time.monotonic() - start_time) < (1 / self._data_rate):
+                while (time.time() - start_time) < (1 / self._data_rate):
                     if len(self._env_buffer) == 0:
                         continue
                     else:

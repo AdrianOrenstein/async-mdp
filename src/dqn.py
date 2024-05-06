@@ -13,7 +13,7 @@ import torch.optim as optim
 import tyro
 from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
-from src.asyncmdp import AsyncGymWrapper
+from src.simple_async import AsyncGymWrapper
 
 from tqdm import tqdm
 
