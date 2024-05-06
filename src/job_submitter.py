@@ -46,9 +46,7 @@ def observing_steprate_over_training(
         yield run_config
 
 
-def changing_datarate_for_DQN(
-    total_timesteps=50_000, num_envs=1, env_name="CartPole-v1", num_seeds=30
-):
+def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=30):
     """
     We've computed the average datarate of DQN for the basic control environments which is about 9300 sps.
     Now we want to start at around that rate and move up and down by 1000 sps.
@@ -58,14 +56,13 @@ def changing_datarate_for_DQN(
 
     defaults = {
         "algo": "src/dqn.py",
-        "num-envs": num_envs,
+        "num-envs": 1,
         "env-id": env_name,
-        "total-timesteps": total_timesteps,
         "wandb-entity": "the-orbital-mind",
         "wandb-project-name": "-".join(
             [
                 os.getenv("SLURM_CLUSTERID") or "na",
-                "async-mdp-performance-vs-steprate",
+                "simplified-async-interface-with-dqn",
                 env_name.lower(),
             ]
         ),
@@ -75,13 +72,14 @@ def changing_datarate_for_DQN(
     # DQN hyperparams
     defaults.update(
         {
-            "learning_rate": 2.5e-4,
+            "total-timesteps": 300_000,
+            "learning_rate": 0.003,
             "buffer_size": 10_000,
             "gamma": 0.99,
             "target_network_frequency": 500,
             "batch_size": 128,
             "start_e": 1,
-            "end_e": 0.00,
+            "end_e": 0.05,
             "exploration_fraction": 0.25,
             "learning_starts": 10_000,
             "train_frequency": 10,
@@ -89,25 +87,12 @@ def changing_datarate_for_DQN(
     )
 
     algo_kwargs = {
-        "MountainCar-v0": {
-            "total-timesteps": 300_000,
-            # "learning_rate": 4e-3,
-            # "gamma": 0.99,
-            # "target_network_frequency": 600,
-            # "end_e": 0.07,
-            # "exploration_fraction": 0.2,
-            # "learning_starts": 1_000,
-            # "train_frequency": 16,
-        },
-        "CartPole-v1": {
-            "total-timesteps": 300_000,
-        },
-        "Acrobot-v1": {
-            "total-timesteps": 300_000,
-        },
+        "MountainCar-v0": {"learning_rate": 0.003},
+        "CartPole-v1": {"learning_rate": 0.0003},
+        "Acrobot-v1": {"learning_rate": 0.003},
     }
 
-    def experiment_run(defaults, seed, data_rate):
+    def experiment_run(defaults, seed, data_rate=None, num_repeat_actions=None):
         run_config = defaults.copy()
 
         # copy over env specific params
@@ -122,22 +107,31 @@ def changing_datarate_for_DQN(
                 ]
             )
 
-        run_config.update({"seed": seed, "async-datarate": data_rate})
+        run_config.update({"seed": seed})
+
+        if data_rate is not None:
+            run_config.update({"async-datarate": data_rate})
+
+        if num_repeat_actions is not None:
+            run_config.update({"num-repeat-actions": num_repeat_actions})
 
         yield run_config
 
-    # Using AsyncWrapper, 0 = env waits for the agent.
+    # no async wrapper
     for seed in range(0, num_seeds):
-        yield from experiment_run(defaults=defaults, seed=seed, data_rate=0)
+        yield from experiment_run(defaults=defaults, seed=seed)
 
+    # async problem
     for seed in range(0, num_seeds):
-        for data_rate in range(100, 1000 + 100, 100):
+        for data_rate in range(25_000 - 20_000, 25_000 + 20_000 + 1000, 1000):
             yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
-    # for seed in range(0, num_seeds):
-    #     run_config = defaults.copy()
-    #     run_config.update({"seed": seed})
-    #     yield run_config
+    # simulating the async problem
+    for seed in range(0, num_seeds):
+        for repeat_actions in range(0, 25 + 1):
+            yield from experiment_run(
+                defaults=defaults, seed=seed, num_repeat_actions=repeat_actions
+            )
 
 
 def seconds_to_hms(seconds: float):
@@ -150,8 +144,9 @@ def seconds_to_hms(seconds: float):
 if __name__ == "__main__":
     ENV_NAMES = ["CartPole-v1", "MountainCar-v0", "Acrobot-v1"]
     EXPERIMENTS = {
-        "observing_steprate_over_training": observing_steprate_over_training,
-        "changing_datarate_for_DQN": changing_datarate_for_DQN,
+        # "observing_steprate_over_training": observing_steprate_over_training,
+        # "changing_datarate_for_DQN": changing_datarate_for_DQN,
+        "simplified_async_interface_with_dqn": simplified_async_interface_with_dqn,
     }
 
     experiment_name = "changing_datarate_for_DQN"
