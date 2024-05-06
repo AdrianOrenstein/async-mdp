@@ -272,7 +272,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
 
     episodic_return_running_avg = 0
     episodic_return_running_length = 0
-
     number_of_times_logged = 0
     for agent_step in tqdm(range(args.total_timesteps)):
         start_time = time.monotonic()
@@ -356,26 +355,39 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         # give time for jit
         if (agent_step > 3) and (agent_step % 100 == 0):
             writer.add_scalar(
-                "charts/incriment_SPS",
-                float(dsps),
+                "agent/step_sps",
+                dsps,
                 agent_step,
             )
             writer.add_scalar(
-                "charts/delta_time",
-                float(end_time - dstart_time),
+                "agent/step_dt",
+                end_time - dstart_time,
                 agent_step,
             )
+
+            if "environment_roundtrip_dt" in infos:
+                writer.add_scalar(
+                    "environment/roundtrip_dt",
+                    infos["environment_roundtrip_dt"],
+                    agent_step,
+                )
+
+                writer.add_scalar(
+                    "environment/roundtrip_sps",
+                    1 / infos["environment_roundtrip_dt"],
+                    agent_step,
+                )
+                
+                writer.add_scalar(
+                    "environment/agent_environment_sps_ratio",
+                    args.async_datarate / (1 / infos["environment_roundtrip_dt"]),
+                    agent_step,
+                )
+                
             if "repeated_actions" in infos:
                 writer.add_scalar(
-                    "charts/repeated_actions", infos["repeated_actions"], agent_step
-                )
-            if "agent_dt" in infos:
-                writer.add_scalar(
-                    "charts/environment_says_agent_dt", infos["agent_dt"], agent_step
-                )
-                writer.add_scalar(
-                    "charts/environment_says_agent_sps",
-                    1 / infos["agent_dt"],
+                    "environment/repeated_actions",
+                    infos["repeated_actions"],
                     agent_step,
                 )
 

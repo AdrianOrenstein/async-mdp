@@ -38,11 +38,11 @@ class AsyncGymWrapper(gym.Wrapper):
             return immediately with the accumulated reward and episode statistics.
         """
         if environment_steps_per_second is not None:
-            self.environment_steps_per_second = environment_steps_per_second
+            self.environment_sps = environment_steps_per_second
         else:
-            self.environment_steps_per_second = 1
+            self.environment_sps = 1
         self._seconds_since_last_action = None
-        self._start_time = None
+        self._roundtrip_start_time = None
         self._last_action = None
         self.repeat_actions = repeat_actions
         self.accumulate_rewards = accumulate_rewards
@@ -50,25 +50,22 @@ class AsyncGymWrapper(gym.Wrapper):
         gym.Wrapper.__init__(self, env)
 
     def reset(self, **kwargs):
-        self._start_time = None
-        return self.env.reset(**kwargs)
+        self._roundtrip_start_time = time.monotonic()
+        measuring_env_step_start_time = time.monotonic()
+        out = self.env.reset(**kwargs)
+        self._last_action = self.env.action_space.sample()
+        self.measuring_env_step = time.monotonic() - measuring_env_step_start_time
+        return out
 
     def step(
         self,
         action,
     ):
-        if self._start_time is None:
-            self._last_action = action
-            observation, reward, truncated, terminated, info = self.env.step(action)
-            info.update({"repeated_actions": 0})
-            self._start_time = time.monotonic()
-            return (observation, reward, truncated, terminated, info)
-
-        self._seconds_since_last_action = time.monotonic() - self._start_time
+        self._seconds_since_last_action = time.monotonic() - self._roundtrip_start_time
 
         if self.repeat_actions is None:
             repeated_actions = math.floor(
-                self.environment_steps_per_second * self._seconds_since_last_action
+                self.environment_sps / (1 / self._seconds_since_last_action)
             )
         else:
             repeated_actions = self.repeat_actions
@@ -82,14 +79,14 @@ class AsyncGymWrapper(gym.Wrapper):
                 accumulated_reward += reward
 
             if truncated or terminated:
-                self._start_time = time.monotonic()
                 info.update(
                     {
                         "repeated_actions": i + 1,
-                        "agent_dt": self._seconds_since_last_action,
+                        "environment_roundtrip_dt": self._seconds_since_last_action,
                     }
                 )
 
+                self._roundtrip_start_time = time.monotonic()
                 if self.accumulate_rewards:
                     return (
                         observation,
@@ -101,16 +98,18 @@ class AsyncGymWrapper(gym.Wrapper):
                 else:
                     return (observation, reward, truncated, terminated, info)
 
+        measuring_env_step_start_time = time.monotonic()
         observation, reward, truncated, terminated, info = self.env.step(action)
+        self.measuring_env_step = time.monotonic() - measuring_env_step_start_time
         self._last_action = action
 
         info.update(
             {
                 "repeated_actions": repeated_actions,
-                "agent_dt": self._seconds_since_last_action,
+                "environment_roundtrip_dt": self._seconds_since_last_action,
             }
         )
-        self._start_time = time.monotonic()
+        self._roundtrip_start_time = time.monotonic()
 
         if self.accumulate_rewards:
             return (
@@ -149,7 +148,7 @@ if __name__ == "__main__":
         return action
 
     env = gym.make("MountainCar-v0")
-    env = AsyncWrapper(env, environment_steps_per_second=1, max_steps=10)
+    env = AsyncGymWrapper(env, environment_steps_per_second=1, max_steps=10)
 
     tests = [
         # equal speed
@@ -188,7 +187,7 @@ if __name__ == "__main__":
 
     # check if the environment is enforcing the max_steps
     env = gym.make("MountainCar-v0")
-    env = AsyncWrapper(env, environment_steps_per_second=1, max_steps=10)
+    env = AsyncGymWrapper(env, environment_steps_per_second=1, max_steps=10)
     env.environment_steps_per_second = 1
     observation = env.reset()
     i = 0
