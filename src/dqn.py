@@ -132,7 +132,7 @@ class Args:
     """
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, async_datarate):
+def make_env(env_id, seed, idx, capture_video, run_name, async_datarate, max_steps):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
@@ -143,7 +143,9 @@ def make_env(env_id, seed, idx, capture_video, run_name, async_datarate):
         env.action_space.seed(seed)
 
         if async_datarate >= 0:
-            env = AsyncGymWrapper(env, data_rate=async_datarate)
+            env = AsyncGymWrapper(
+                env, environment_steps_per_second=async_datarate, max_steps=max_steps
+            )
 
         return env
 
@@ -221,6 +223,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 args.capture_video,
                 run_name,
                 args.async_datarate,
+                args.total_timesteps,
             )
             for i in range(args.num_envs)
         ]

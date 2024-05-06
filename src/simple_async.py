@@ -15,7 +15,7 @@ ActType = TypeVar("ActType")
 # async wrapper applies a time limit, and the action repeat using deltatime, to simulate the asynchronous setting.
 
 
-class AsyncWrapper(gym.Wrapper):
+class AsyncGymWrapper(gym.Wrapper):
     def __init__(
         self,
         env: gym.Env,
@@ -42,9 +42,9 @@ class AsyncWrapper(gym.Wrapper):
 
         gym.Wrapper.__init__(self, gym.wrappers.TimeLimit(env, max_steps))
 
-    def reset(self):
+    def reset(self, **kwargs):
         self._start_time = None
-        return self.env.reset()
+        return self.env.reset(**kwargs)
 
     def step(
         self,
