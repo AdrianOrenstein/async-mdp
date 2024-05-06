@@ -122,13 +122,13 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=30):
         yield from experiment_run(defaults=defaults, seed=seed)
 
     # async problem
-    for seed in range(0, num_seeds):
-        for data_rate in range(25_000 - 20_000, 25_000 + 20_000 + 1000, 1000):
+    for data_rate in range(25_000 - 20_000, 25_000 + 20_000 + 1000, 1000):
+        for seed in range(0, num_seeds):
             yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
     # simulating the async problem
-    for seed in range(0, num_seeds):
-        for repeat_actions in range(0, 25 + 1):
+    for repeat_actions in range(0, 25 + 1):
+        for seed in range(0, num_seeds):
             yield from experiment_run(
                 defaults=defaults, seed=seed, num_repeat_actions=repeat_actions
             )
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         "simplified_async_interface_with_dqn": simplified_async_interface_with_dqn,
     }
 
-    experiment_name = "changing_datarate_for_DQN"
+    experiment_name = "simplified_async_interface_with_dqn"
 
     all_jobs = {}
 
@@ -163,8 +163,13 @@ if __name__ == "__main__":
             )
 
             run_list = ["poetry", "run", "python", job_dic["algo"]]
-            if os.getenv("SLURM_CLUSTERID"):
-                run_list = [job_dic["algo"]]
+            if os.getenv("SLURM_CLUSTERID") != "m1_mac":
+                run_list = [
+                    "sbatch",
+                    f"--job-name {job_UID}",
+                    "./slurm_job.sh",
+                    job_dic["algo"],
+                ]
 
             job_dic.update(
                 {
@@ -209,9 +214,6 @@ if __name__ == "__main__":
             # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
             # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
             # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
-            job_dic["command"] = (
-                f"sbatch --job-name {job_UID} ./slurm_job.sh {job_dic['command']}"
-            )
 
             print(f"Submitting job {job_UID}")
             # print(f"\t{job_dic['command']}")
@@ -233,4 +235,4 @@ if __name__ == "__main__":
         else:
             print(f"Skipping completed job {job_UID}")
 
-# SLURM_CLUSTERID=beluga python src/job_submitter.py
+# SLURM_CLUSTERID=m1_mac PYTHONPATH=./src:. poetry run python src/job_submitter.py
