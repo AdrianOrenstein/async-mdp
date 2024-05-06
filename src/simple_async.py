@@ -21,6 +21,8 @@ class AsyncGymWrapper(gym.Wrapper):
         env: gym.Env,
         environment_steps_per_second: int = 2,
         max_steps: int = 300_000,
+        repeat_actions: int = None,
+        accumulate_rewards: bool = True,
     ):
         """
         Async Wrapper simulates the _asynchronous problem setting_ where the rate
@@ -35,12 +37,17 @@ class AsyncGymWrapper(gym.Wrapper):
         If at any point the episode is terminated or truncated, the environment will
             return immediately with the accumulated reward and episode statistics.
         """
-        self.environment_steps_per_second = environment_steps_per_second
+        if environment_steps_per_second is not None:
+            self.environment_steps_per_second = environment_steps_per_second
+        else:
+            self.environment_steps_per_second = 1
         self._seconds_since_last_action = None
         self._start_time = None
         self._last_action = None
+        self.repeat_actions = repeat_actions
+        self.accumulate_rewards = accumulate_rewards
 
-        gym.Wrapper.__init__(self, gym.wrappers.TimeLimit(env, max_steps))
+        gym.Wrapper.__init__(self, env)
 
     def reset(self, **kwargs):
         self._start_time = None
@@ -59,26 +66,62 @@ class AsyncGymWrapper(gym.Wrapper):
 
         self._seconds_since_last_action = time.monotonic() - self._start_time
 
-        repeated_actions = math.floor(
-            self._seconds_since_last_action * self.environment_steps_per_second
-        )
+        if self.repeat_actions is None:
+            repeated_actions = math.floor(
+                self.environment_steps_per_second * self._seconds_since_last_action
+            )
+        else:
+            repeated_actions = self.repeat_actions
+
         accumulated_reward = 0
         for i in range(repeated_actions):
             observation, reward, truncated, terminated, info = self.env.step(
                 self._last_action
             )
-            accumulated_reward += reward
+            if self.accumulate_rewards:
+                accumulated_reward += reward
 
             if truncated or terminated:
-                info.update({"repeated_actions": i + 1})
-                return (observation, accumulated_reward, truncated, terminated, info)
+                self._start_time = time.monotonic()
+                info.update(
+                    {
+                        "repeated_actions": i + 1,
+                        "agent_dt": self._seconds_since_last_action,
+                    }
+                )
+
+                if self.accumulate_rewards:
+                    return (
+                        observation,
+                        accumulated_reward,
+                        truncated,
+                        terminated,
+                        info,
+                    )
+                else:
+                    return (observation, reward, truncated, terminated, info)
 
         observation, reward, truncated, terminated, info = self.env.step(action)
         self._last_action = action
 
-        info.update({"repeated_actions": repeated_actions})
+        info.update(
+            {
+                "repeated_actions": repeated_actions,
+                "agent_dt": self._seconds_since_last_action,
+            }
+        )
         self._start_time = time.monotonic()
-        return (observation, reward + accumulated_reward, truncated, terminated, info)
+
+        if self.accumulate_rewards:
+            return (
+                observation,
+                reward + accumulated_reward,
+                truncated,
+                terminated,
+                info,
+            )
+        else:
+            return (observation, reward, truncated, terminated, info)
 
 
 if __name__ == "__main__":

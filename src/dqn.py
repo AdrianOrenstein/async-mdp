@@ -58,11 +58,17 @@ poetry run python src/dqn.py \
     --track
 """
 
+# TODO(adrian): send the agent a list of tuples, instead of selecting for the agent.
+
 
 @dataclass
 class Args:
-    async_datarate: int = -1  # 2 Hz
+    async_datarate: int = None  # Hz
     """the data rate of the async environment"""
+    num_repeat_actions: int = None
+    """the number of repeated actions used to be deterministic"""
+    accumulate_rewards: bool = True
+    """should the environment accumulate rewards for the repeated actions"""
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
     """the name of this experiment"""
     seed: int = 1
@@ -89,9 +95,9 @@ class Args:
     # Algorithm specific arguments
     env_id: str = "CartPole-v1"
     """the id of the environment"""
-    total_timesteps: int = 500000
+    total_timesteps: int = 300_000
     """total timesteps of the experiments"""
-    learning_rate: float = 2.5e-4
+    learning_rate: float = 0.003
     """the learning rate of the optimizer"""
     num_envs: int = 1
     """the number of parallel game environments"""
@@ -132,7 +138,17 @@ class Args:
     """
 
 
-def make_env(env_id, seed, idx, capture_video, run_name, async_datarate, max_steps):
+def make_env(
+    env_id,
+    seed,
+    idx,
+    capture_video,
+    run_name,
+    async_datarate,
+    max_steps,
+    num_repeat_actions,
+    accumulate_rewards,
+):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
@@ -142,9 +158,13 @@ def make_env(env_id, seed, idx, capture_video, run_name, async_datarate, max_ste
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env.action_space.seed(seed)
 
-        if async_datarate >= 0:
+        if (async_datarate is not None) or (num_repeat_actions is not None):
             env = AsyncGymWrapper(
-                env, environment_steps_per_second=async_datarate, max_steps=max_steps
+                env,
+                environment_steps_per_second=async_datarate,
+                max_steps=max_steps,
+                repeat_actions=num_repeat_actions,
+                accumulate_rewards=accumulate_rewards,
             )
 
         return env
@@ -224,6 +244,8 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 run_name,
                 args.async_datarate,
                 args.total_timesteps,
+                args.num_repeat_actions,
+                args.accumulate_rewards,
             )
             for i in range(args.num_envs)
         ]
@@ -343,6 +365,19 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 float(end_time - dstart_time),
                 agent_step,
             )
+            if "repeated_actions" in infos:
+                writer.add_scalar(
+                    "charts/repeated_actions", infos["repeated_actions"], agent_step
+                )
+            if "agent_dt" in infos:
+                writer.add_scalar(
+                    "charts/environment_says_agent_dt", infos["agent_dt"], agent_step
+                )
+                writer.add_scalar(
+                    "charts/environment_says_agent_sps",
+                    1 / infos["agent_dt"],
+                    agent_step,
+                )
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
