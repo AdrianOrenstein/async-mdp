@@ -156,12 +156,15 @@ if __name__ == "__main__":
     for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
             job_UID = "-".join(
-                [
-                    f"{experiment_name.replace('_', '')}",
-                    job_dic.get("env-id"),
-                    job_dic.get("learning_rate"),
-                    job_dic.get("seed"),
-                ]
+                (
+                    str(i)
+                    for i in [
+                        experiment_name.replace("_", ""),
+                        job_dic.get("env-id"),
+                        job_dic.get("learning_rate"),
+                        job_dic.get("seed"),
+                    ]
+                )
             )
 
             run_list = ["poetry", "run", "python", job_dic["algo"]]
