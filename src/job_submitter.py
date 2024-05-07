@@ -122,7 +122,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=30):
         yield from experiment_run(defaults=defaults, seed=seed)
 
     # async problem
-    for data_rate in range(25_000 - 20_000, 25_000 + 20_000 + 1000, 1000):
+    for data_rate in range(25_000 - 23_000, 25_000 + 20_000 + 1000, 1000):
         for seed in range(0, num_seeds):
             yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
@@ -236,3 +236,4 @@ if __name__ == "__main__":
             print(f"Skipping completed job {job_UID}")
 
 # SLURM_CLUSTERID=m1_mac PYTHONPATH=./src:. poetry run python src/job_submitter.py
+# PYTHONPATH=$SLURM_TMPDIR/project/src:. SLURM_CLUSTERID=test_beluga $SLURM_TMPDIR/virtualenvs/async-mdp-PEBw-NfQ-py3.10/bin/python $SLURM_TMPDIR/project/src/job_submitter.py
