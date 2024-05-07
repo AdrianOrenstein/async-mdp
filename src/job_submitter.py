@@ -46,7 +46,7 @@ def observing_steprate_over_training(
         yield run_config
 
 
-def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=30):
+def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
     """
     We've computed the average datarate of DQN for the basic control environments which is about 9300 sps.
     Now we want to start at around that rate and move up and down by 1000 sps.
