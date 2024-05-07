@@ -117,7 +117,6 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
 
         yield run_config
 
-    
     for seed in range(0, num_seeds):
         # async problem
         for data_rate in range(2_000, 45_000 + 1000, 1000):
@@ -154,6 +153,9 @@ if __name__ == "__main__":
 
     for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
+            maybe_add_seed = (
+                [] if os.getenv("SLURM_CLUSTERID") != "m1_mac" else job_dic.get("seed")
+            )
             job_UID = "-".join(
                 (
                     str(i)
@@ -163,8 +165,8 @@ if __name__ == "__main__":
                         job_dic.get("learning_rate"),
                         job_dic.get("async-datarate", "na"),
                         job_dic.get("num-repeat-actions", "na"),
-                        job_dic.get("seed"),
                     ]
+                    + maybe_add_seed
                 )
             )
 

@@ -4,6 +4,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=0-1:00
 #SBATCH --cpu-freq=Performance
+#SBATCH --array=1-10
 
 # setup and tear down takes .5-2 minutes.
 
@@ -38,7 +39,7 @@ export python_venv=$SLURM_TMPDIR/virtualenvs/async-mdp-PEBw-NfQ-py3.10/bin/pytho
 
 echo "Running experiment..."
 cd $SLURM_TMPDIR/project
-$python_venv $@ 
+$python_venv $@ --seed $SLURM_ARRAY_TASK_ID
     # && \ 
     # echo "Syncing wandb..." && \ 
     # $python_venv -m wandb sync $SLURM_TMPDIR/project/wandb/
