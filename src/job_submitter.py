@@ -214,37 +214,35 @@ if __name__ == "__main__":
     except FileNotFoundError:
         completed_jobs = {}
 
-    print(all_jobs[list(all_jobs.keys())[0]].get("command"))
-
     # Run all jobs that are not marked as completed
-    # for job_UID, job_dic in all_jobs.items():
-    #     if job_UID not in completed_jobs:
+    for job_UID, job_dic in all_jobs.items():
+        if job_UID not in completed_jobs:
 
-    #         # check if we're on the slurm cluster
-    #         # if os.getenv("IS_SLURM"):
-    #         # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
-    #         # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
-    #         # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
+            # check if we're on the slurm cluster
+            # if os.getenv("IS_SLURM"):
+            # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
+            # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
+            # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
 
-    #         print(f"Submitting job {job_UID}")
-    #         # print(f"\t{job_dic['command']}")
-    #         process = subprocess.run(
-    #             job_dic["command"], shell=True, check=True, capture_output=True
-    #         )
+            print(f"Submitting job {job_UID}")
+            # print(f"\t{job_dic['command']}")
+            process = subprocess.run(
+                job_dic["command"], shell=True, check=True, capture_output=True
+            )
 
-    #         # Mark the job as completed
-    #         completed_jobs[job_UID] = process.returncode
+            # Mark the job as completed
+            completed_jobs[job_UID] = process.returncode
 
-    #         # Write the updated completion status to the JSON file
-    #         with open("jobs.json", "w") as f:
-    #             json.dump(completed_jobs, f)
+            # Write the updated completion status to the JSON file
+            with open("jobs.json", "w") as f:
+                json.dump(completed_jobs, f)
 
-    #         print(
-    #             f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
-    #         )
+            print(
+                f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
+            )
 
-    #     else:
-    #         print(f"Skipping completed job {job_UID}")
+        else:
+            print(f"Skipping completed job {job_UID}")
 
 # SLURM_CLUSTERID=m1_mac PYTHONPATH=./src:. poetry run python src/job_submitter.py
-# PYTHONPATH=$SLURM_TMPDIR/project/src:. SLURM_CLUSTERID=test_beluga $SLURM_TMPDIR/virtualenvs/async-mdp-PEBw-NfQ-py3.10/bin/python $SLURM_TMPDIR/project/src/job_submitter.py
+# SLURM_CLUSTERID=beluga_4cpu_perf_arrayjob python src/job_submitter.py
