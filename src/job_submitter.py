@@ -162,6 +162,8 @@ if __name__ == "__main__":
                         experiment_name.replace("_", ""),
                         job_dic.get("env-id"),
                         job_dic.get("learning_rate"),
+                        job_dic.get("async-datarate", "na"),
+                        job_dic.get("num-repeat-actions", "na"),
                         job_dic.get("seed"),
                     ]
                 )
