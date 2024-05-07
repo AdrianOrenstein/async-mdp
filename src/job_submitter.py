@@ -214,6 +214,11 @@ if __name__ == "__main__":
     except FileNotFoundError:
         completed_jobs = {}
 
+    if os.getenv("DEBUG", default=0) > 0:
+        # print command of first job and exit
+        print(all_jobs[list(all_jobs.keys())[0]]["command"])
+        exit()
+
     # Run all jobs that are not marked as completed
     for job_UID, job_dic in all_jobs.items():
         if job_UID not in completed_jobs:
