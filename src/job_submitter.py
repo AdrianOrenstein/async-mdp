@@ -103,7 +103,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
             run_config["wandb-project-name"] = "-".join(
                 [
                     run_config["wandb-project-name"],
-                    str(algo_kwargs[env_name].get("total-timesteps")),
+                    str(run_config.get("total-timesteps")),
                 ]
             )
 
@@ -190,6 +190,8 @@ if __name__ == "__main__":
                     ),
                 }
             )
+
+            print(job_UID, job_dic)
 
             all_jobs.update({job_UID: job_dic})
 
