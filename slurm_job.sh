@@ -3,8 +3,6 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=0-1:00
-#SBATCH --exclusive
-#SBATCH --nodes 1 
 #SBATCH --cpu-freq=Performance
 
 # setup and tear down takes .5-2 minutes.
