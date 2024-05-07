@@ -2,7 +2,7 @@
 #SBATCH --account=def-mbowling
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=0-1:00
+#SBATCH --time=0-2:59
 #SBATCH --cpu-freq=Performance
 #SBATCH --array=1-10
 
