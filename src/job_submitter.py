@@ -154,9 +154,6 @@ if __name__ == "__main__":
 
     for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
-            maybe_add_seed = (
-                job_dic.get("seed") if os.getenv("DONT_SUBMIT_SEEDS") != "1" else []
-            )
             job_UID = "-".join(
                 (
                     str(i)
@@ -167,9 +164,10 @@ if __name__ == "__main__":
                         experiment_name.replace("_", ""),
                         job_dic.get("env-id"),
                     ]
-                    + maybe_add_seed
                 )
             )
+            if os.getenv("DONT_SUBMIT_SEEDS") != "1":
+                job_UID += f"-{job_dic.get('seed')}"
 
             run_list = ["poetry", "run", "python", job_dic["algo"]]
             if os.getenv("SLURM_CLUSTERID") != "m1_mac":
