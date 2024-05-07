@@ -107,7 +107,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
                 ]
             )
 
-        if os.getenv("SLURM_CLUSTERID") == "m1_mac":
+        if os.getenv("DONT_SUBMIT_SEEDS") != "1":
             run_config.update({"seed": seed})
 
         if data_rate is not None:
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     for env_name in ENV_NAMES:
         for job_dic in EXPERIMENTS[experiment_name](env_name=env_name):
             maybe_add_seed = (
-                [] if os.getenv("SLURM_CLUSTERID") != "m1_mac" else job_dic.get("seed")
+                job_dic.get("seed") if os.getenv("DONT_SUBMIT_SEEDS") != "1" else []
             )
             job_UID = "-".join(
                 (
@@ -245,4 +245,4 @@ if __name__ == "__main__":
             print(f"Skipping completed job {job_UID}")
 
 # SLURM_CLUSTERID=m1_mac PYTHONPATH=./src:. poetry run python src/job_submitter.py
-# SLURM_CLUSTERID=beluga_4cpu_perf_arrayjob python src/job_submitter.py
+# DONT_SUBMIT_SEEDS=1 SLURM_CLUSTERID=beluga_4cpu_perf_arrayjob_final python src/job_submitter.py
