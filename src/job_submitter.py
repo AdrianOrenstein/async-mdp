@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
             all_jobs.update({job_UID: job_dic})
 
-            if int(os.getenv("DEBUG", default=0)) > 0:
+            if int(os.getenv("DEBUG", default=0)) > 1:
                 print(job_UID)
                 for k, v in job_dic.items():
                     print(f"\t{k}: {v}")
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     except FileNotFoundError:
         completed_jobs = {}
 
-    if os.getenv("DEBUG", default=0) > 0:
+    if int(os.getenv("DEBUG", default=0)) > 0:
         # print command of first job and exit
         print(all_jobs[list(all_jobs.keys())[0]]["command"])
         exit()
