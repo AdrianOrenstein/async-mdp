@@ -27,7 +27,7 @@ def convert_job_dic_to_key(job_dic: dict) -> str:
 
 
 def observing_steprate_over_training(
-    total_timesteps=50_000, num_envs=1, env_name="CartPole-v0", num_seeds=10
+    total_timesteps=50_000, num_envs=1, env_name="CartPole-v0"
 ):
     defaults = {
         "algo": "src/dqn.py",
@@ -107,7 +107,8 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
                 ]
             )
 
-        run_config.update({"seed": seed})
+        if os.getenv("SLURM_CLUSTERID") == "m1_mac":
+            run_config.update({"seed": seed})
 
         if data_rate is not None:
             run_config.update({"async-datarate": data_rate})
@@ -160,11 +161,11 @@ if __name__ == "__main__":
                 (
                     str(i)
                     for i in [
+                        job_dic.get("num-repeat-actions", "na"),
+                        job_dic.get("async-datarate", "na"),
+                        job_dic.get("learning_rate"),
                         experiment_name.replace("_", ""),
                         job_dic.get("env-id"),
-                        job_dic.get("learning_rate"),
-                        job_dic.get("async-datarate", "na"),
-                        job_dic.get("num-repeat-actions", "na"),
                     ]
                     + maybe_add_seed
                 )
@@ -213,35 +214,37 @@ if __name__ == "__main__":
     except FileNotFoundError:
         completed_jobs = {}
 
+    print(all_jobs[list(all_jobs.keys())[0]].get("command"))
+
     # Run all jobs that are not marked as completed
-    for job_UID, job_dic in all_jobs.items():
-        if job_UID not in completed_jobs:
+    # for job_UID, job_dic in all_jobs.items():
+    #     if job_UID not in completed_jobs:
 
-            # check if we're on the slurm cluster
-            # if os.getenv("IS_SLURM"):
-            # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
-            # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
-            # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
+    #         # check if we're on the slurm cluster
+    #         # if os.getenv("IS_SLURM"):
+    #         # time_for_experiment = 120 + max(job_dic["command"].get("total-timesteps")/100, math.ceil(job_dic["command"].get("total-timesteps") / job_dic["command"].get("async-datarate")))
+    #         # print(f"Running on slurm, setting time to {seconds_to_hms(time_for_experiment)}")
+    #         # job_dic["command"] = f"sbatch --job ./slurm_job.sh {job_dic['command']}"
 
-            print(f"Submitting job {job_UID}")
-            # print(f"\t{job_dic['command']}")
-            process = subprocess.run(
-                job_dic["command"], shell=True, check=True, capture_output=True
-            )
+    #         print(f"Submitting job {job_UID}")
+    #         # print(f"\t{job_dic['command']}")
+    #         process = subprocess.run(
+    #             job_dic["command"], shell=True, check=True, capture_output=True
+    #         )
 
-            # Mark the job as completed
-            completed_jobs[job_UID] = process.returncode
+    #         # Mark the job as completed
+    #         completed_jobs[job_UID] = process.returncode
 
-            # Write the updated completion status to the JSON file
-            with open("jobs.json", "w") as f:
-                json.dump(completed_jobs, f)
+    #         # Write the updated completion status to the JSON file
+    #         with open("jobs.json", "w") as f:
+    #             json.dump(completed_jobs, f)
 
-            print(
-                f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
-            )
+    #         print(
+    #             f"Job {job_UID} completed with return code {process.returncode}, saved to jobs.json"
+    #         )
 
-        else:
-            print(f"Skipping completed job {job_UID}")
+    #     else:
+    #         print(f"Skipping completed job {job_UID}")
 
 # SLURM_CLUSTERID=m1_mac PYTHONPATH=./src:. poetry run python src/job_submitter.py
 # PYTHONPATH=$SLURM_TMPDIR/project/src:. SLURM_CLUSTERID=test_beluga $SLURM_TMPDIR/virtualenvs/async-mdp-PEBw-NfQ-py3.10/bin/python $SLURM_TMPDIR/project/src/job_submitter.py
