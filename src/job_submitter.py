@@ -117,21 +117,21 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=30):
 
         yield run_config
 
-    # no async wrapper
-    for seed in range(0, num_seeds):
-        yield from experiment_run(defaults=defaults, seed=seed)
-
     # async problem
-    for data_rate in range(25_000 - 23_000, 25_000 + 20_000 + 1000, 1000):
-        for seed in range(0, num_seeds):
+    for seed in range(0, num_seeds):
+        for data_rate in range(25_000 - 23_000, 25_000 + 20_000 + 1000, 1000):
             yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
     # simulating the async problem
-    for repeat_actions in range(0, 25 + 1):
-        for seed in range(0, num_seeds):
+    for seed in range(0, num_seeds):
+        for repeat_actions in range(0, 25 + 1):
             yield from experiment_run(
                 defaults=defaults, seed=seed, num_repeat_actions=repeat_actions
             )
+
+    # no async wrapper
+    for seed in range(0, num_seeds):
+        yield from experiment_run(defaults=defaults, seed=seed)
 
 
 def seconds_to_hms(seconds: float):
