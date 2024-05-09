@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "async-mdp"
 version = "2.0.0b1"
+package-mode = false
 description = "High-quality single file implementation of Deep Reinforcement Learning algorithms with research-friendly features"
 authors = ["Adrian Orenstein <adrian.orenstein@gmail.com>"]
 keywords = ["reinforcement", "machine", "learning", "research"]
