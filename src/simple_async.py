@@ -67,9 +67,14 @@ class AsynchronousGym(gym.Wrapper):
             num_repeat_actions = 0
         else:
             agent_response_time = time.monotonic() - self._roundtrip_start_time
-            num_repeat_actions = math.floor(
-                self._environment_steps_per_second * agent_response_time
-            )
+
+            ratio = self._environment_steps_per_second * agent_response_time
+
+            if math.isclose(ratio, 1, rel_tol=0.01, abs_tol=0.0):
+                # the agent used the maximum amount of time
+                num_repeat_actions = 0
+            else:
+                num_repeat_actions = math.floor(ratio)
 
         observations = []
         rewards = []
@@ -135,8 +140,8 @@ if __name__ == "__main__":
     env = AsynchronousGym(env, environment_steps_per_second=1)
 
     tests = [
-        # equal speed
-        (1, 1, -2, 1),
+        # equal speed, the agent is not delayed, and used the maximum amount of time.
+        (1, 1, -1, 0),
         # agent is faster
         (1, 1 / 2, -1, 0),
         (2, 1, -1, 0),
