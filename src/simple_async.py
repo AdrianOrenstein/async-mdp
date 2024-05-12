@@ -1,6 +1,6 @@
 import math
 import time
-from typing import Any, TypeVar
+from typing import Any, Dict, List, Tuple, TypeVar
 import gymnasium as gym
 
 ObsType = TypeVar("ObsType")
@@ -14,130 +14,112 @@ ActType = TypeVar("ActType")
 #   preference will be played.
 # async wrapper applies a time limit, and the action repeat using deltatime, to simulate the asynchronous setting.
 
+# class AsyncGymWrapperWithRepeats(gym.Wrapper):
+#     def __init__(self, env: gym.Env):
+#         gym.Wrapper.__init__(self, env)
 
-class AsyncGymWrapper(gym.Wrapper):
-    def __init__(
-        self,
-        env: gym.Env,
-        environment_steps_per_second: int = 2,
-        max_steps: int = 300_000,
-        repeat_actions: int = None,
-        accumulate_rewards: bool = True,
-    ):
+#     def step(self, action: ActType) -> Tuple[List[ObsType], List[float], bool, bool, List[Dict[str, Any]]]:
+
+
+class AsynchronousGym(gym.Wrapper):
+    def __init__(self, env: gym.Env, environment_steps_per_second: int = 2):
         """
         Async Wrapper simulates the _asynchronous problem setting_ where the rate
             at which the agent and environment interact is different.
-        The environment will have a limited number of timesteps for learning, hence
-            we use gymnasium.wrappers.TimeLimit to enforce this.
-        We use repeat actions to simulate the asynchronous setting.
-        If the agent is slow, the environment will repeat the last action preference
-            until the agent is caught up, accumulating rewards, and then play the
-            agent's new action preference.
+        The environment will repeat actions if the agent is slow by measuring the
+            delta time between when an observation was sent to the agent, and when
+            an action was received.
         If the agent is fast, the environment will play the agent's action preference.
         If at any point the episode is terminated or truncated, the environment will
             return immediately with the accumulated reward and episode statistics.
         """
-        if environment_steps_per_second is not None:
-            self.environment_sps = environment_steps_per_second
-        else:
-            self.environment_sps = 1
+        super(AsynchronousGym, self).__init__(env)
+        self._environment_steps_per_second = environment_steps_per_second
+
         self._seconds_since_last_action = None
         self._roundtrip_start_time = None
         self._last_action = None
-        self.repeat_actions = repeat_actions
-        self.accumulate_rewards = accumulate_rewards
 
-        gym.Wrapper.__init__(self, env)
+    def reset(
+        self, environment_steps_per_second: int = None, **kwargs
+    ) -> Tuple[ObsType, dict]:
+        self._roundtrip_start_time = None
+        self._last_action = None
+        if environment_steps_per_second is not None:
+            self._environment_steps_per_second = environment_steps_per_second
 
-    def reset(self, **kwargs):
-        self._roundtrip_start_time = time.monotonic()
-        measuring_env_step_start_time = time.monotonic()
-        out = self.env.reset(**kwargs)
-        self._last_action = self.env.action_space.sample()
-        self.measuring_env_step = time.monotonic() - measuring_env_step_start_time
-        return out
+        observation, info = self.env.reset(**kwargs)
+        info.update(
+            {
+                "num_repeated_actions": 0,
+                "agent_response_time": 0,
+            }
+        )
+        return (observation, info)
 
     def step(
         self,
         action,
     ):
-        self._seconds_since_last_action = time.monotonic() - self._roundtrip_start_time
-
-        if self.repeat_actions is None:
-            repeated_actions = math.floor(
-                self.environment_sps
-                * self._seconds_since_last_action
-                # self.environment_sps / (1 / self._seconds_since_last_action)
-            )
+        # If the agent is delayed, the environment will repeat the last seen action.
+        if self._roundtrip_start_time is None:
+            agent_response_time = 0
+            num_repeat_actions = 0
         else:
-            repeated_actions = self.repeat_actions
-
-        accumulated_reward = 0
-        for i in range(repeated_actions):
-            observation, reward, truncated, terminated, info = self.env.step(
-                self._last_action
+            agent_response_time = time.monotonic() - self._roundtrip_start_time
+            num_repeat_actions = math.floor(
+                self._environment_steps_per_second * agent_response_time
             )
-            if self.accumulate_rewards:
-                accumulated_reward += reward
 
-            if truncated or terminated:
-                info.update(
-                    {
-                        "repeated_actions": i + 1,
-                        "environment_roundtrip_dt": self._seconds_since_last_action,
-                    }
-                )
+        observations = []
+        rewards = []
+        infos = []
+        for i in range(num_repeat_actions):
+            observation, reward, truncated, terminated, info = self.env.step(action)
+            observations.append(observation)
+            rewards.append(reward)
+            info.update(
+                {
+                    "num_repeat_actions": i + 1,
+                    "agent_response_time": agent_response_time,
+                }
+            )
+            infos.append(info)
 
+            if terminated or truncated:
                 self._roundtrip_start_time = time.monotonic()
-                if self.accumulate_rewards:
-                    return (
-                        observation,
-                        accumulated_reward,
-                        truncated,
-                        terminated,
-                        info,
-                    )
-                else:
-                    return (observation, reward, truncated, terminated, info)
+                return (observations, rewards, truncated, terminated, infos)
 
-        measuring_env_step_start_time = time.monotonic()
+        # Once the environment is caught up, the agent's new action will be played.
         observation, reward, truncated, terminated, info = self.env.step(action)
-        self.measuring_env_step = time.monotonic() - measuring_env_step_start_time
-        self._last_action = action
-
+        observations.append(observation)
+        rewards.append(reward)
         info.update(
             {
-                "repeated_actions": repeated_actions,
-                "environment_roundtrip_dt": self._seconds_since_last_action,
+                "num_repeat_actions": num_repeat_actions,
+                "agent_response_time": agent_response_time,
             }
         )
-        self._roundtrip_start_time = time.monotonic()
+        infos.append(info)
+        self._last_action = action
 
-        if self.accumulate_rewards:
-            return (
-                observation,
-                reward + accumulated_reward,
-                truncated,
-                terminated,
-                info,
-            )
-        else:
-            return (observation, reward, truncated, terminated, info)
+        # Start measuring the agent's response time.
+        self._roundtrip_start_time = time.monotonic()
+        return (observations, rewards, truncated, terminated, infos)
+
+
+# class AsynchronousGymWithAccumulateRewardsAndPickLastObs(AsynchronousGym):
+#     def __init__(self, env: gym.Env, environment_steps_per_second: int):
+#         super(AsynchronousGymWithAccumulateRewardsAndPickLastObs, self).__init__(
+#             env, environment_steps_per_second
+#         )
+
+#     def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
+#         observations, rewards, truncated, terminated, info = self.step(action)
+#         return observations[-1], sum(rewards), truncated, terminated, info
 
 
 if __name__ == "__main__":
-
-    # Pytests using mountaincar, we can sample the action space for the agent, and verify the asyncwrapper by looking at the accumulated rewareds.
-    # if the environment's datarate was 1 step per second, and the agent took 0.0 seconds, the environment should repeat 0 actions and return the agent's action preference. 1 data packet should come back.
-    # if the environment's datarate was 1 step per second, and the agent took 0.5 seconds, the environment should repeat 0 actions and return the agent's action preference. 1 data packet should come back.
-    # if the environment's datarate was 1 step per second, and the agent took 0.9 seconds, the environment should repeat 0 actions and return the agent's action preference. 1 data packet should come back.
-
-    # If the environment's datarate was 1 step per second, and the agent took 1 second, the environment should repeat 1 action, and return the action's action preference, meaning 2 data packets should come back.
-    # If the environment's datarate was 1 step per second, and the agent took 1.1 second, the environment should repeat 1 action, and return the action's action preference, meaning 2 data packets should come back.
-    # If the environment's datarate was 1 step per second, and the agent took 1.9 second, the environment should repeat 1 action, and return the action's action preference, meaning 2 data packets should come back.
-    # If the environment's datarate was 1 step per second, and the agent took 2 second, the environment should repeat 2 action, and return the action's action preference, meaning 3 data packets should come back.
-
-    # If the environment's datarate was 10 steps per second, and the agent took 1/10 second, the environment should repeat 1 action, and return the action's action preference, meaning 2 data packets should come back.
 
     def agent_decide_action(decision_rate):
         agent_start_time = time.monotonic()
@@ -150,7 +132,7 @@ if __name__ == "__main__":
         return action
 
     env = gym.make("MountainCar-v0")
-    env = AsyncGymWrapper(env, environment_steps_per_second=1, max_steps=10)
+    env = AsynchronousGym(env, environment_steps_per_second=1)
 
     tests = [
         # equal speed
@@ -169,36 +151,29 @@ if __name__ == "__main__":
     ]
 
     for agent_rate, environment_rate, expected_reward, expected_repeat_actions in tests:
-        env.environment_steps_per_second = environment_rate
-        observation = env.reset()
-        action = agent_decide_action(agent_rate)
-        observation, reward, truncated, terminated, info = env.step(action)
-        # the first time is always instintanious
-        assert reward == -1, f"expected -1 but got {reward}"
+        (observation, info) = env.reset(environment_steps_per_second=environment_rate)
         assert (
-            info.get("repeated_actions") == 0
-        ), f"expected 0 but got {info.get('repeated_actions')}"
+            info.get("num_repeated_actions") == 0
+        ), f"expected 0 but got {info.get('num_repeated_actions')}"
+        assert env._environment_steps_per_second == environment_rate
+        action = agent_decide_action(agent_rate)
+        (observations, rewards, truncated, terminated, infos) = env.step(action)
+
+        # just take the last
+        observation = observations[-1]
+        reward = sum(rewards)
+        info = infos[-1]
+
+        # the first time is always instintanious
+        assert reward == -1, f"expected {expected_reward} but got {rewards[0]}"
 
         # the second time is when we can get delays
         action = agent_decide_action(agent_rate)
-        observation, reward, truncated, terminated, info = env.step(action)
+        observations, rewards, truncated, terminated, infos = env.step(action)
+
+        # just take the last
+        observation = observations[-1]
+        reward = sum(rewards)
+        info = infos[-1]
+
         assert reward == expected_reward, f"expected {expected_reward} but got {reward}"
-        assert expected_repeat_actions == info.get(
-            "repeated_actions"
-        ), f"expected {expected_repeat_actions} but got {info.get('repeated_actions')}"
-
-    # check if the environment is enforcing the max_steps
-    env = gym.make("MountainCar-v0")
-    env = AsyncGymWrapper(env, environment_steps_per_second=1, max_steps=10)
-    env.environment_steps_per_second = 1
-    observation = env.reset()
-    i = 0
-    while True:
-        action = agent_decide_action(0)
-        observation, reward, truncated, terminated, info = env.step(action)
-        i += 1
-        if truncated or terminated:
-            env.reset()
-            break
-
-    assert i == 10, f"expected 10 but got {i}"
