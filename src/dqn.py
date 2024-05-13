@@ -230,17 +230,22 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     # env setup
-    envs = make_env(
-        args.env_id,
-        args.seed,
-        0,
-        args.capture_video,
-        run_name,
-        args.async_datarate,
+    envs = gym.vector.SyncVectorEnv(
+        [
+            make_env(
+                args.env_id,
+                args.seed + i,
+                i,
+                args.capture_video,
+                run_name,
+                args.async_datarate,
+            )
+            for i in range(args.num_envs)
+        ]
     )
-    # assert isinstance(
-    #     envs.single_action_space, gym.spaces.Discrete
-    # ), "only discrete action space is supported"
+    assert isinstance(
+        envs.single_action_space, gym.spaces.Discrete
+    ), "only discrete action space is supported"
 
     q_network = QNetwork(envs).to(device)
     optimizer = optim.Adam(q_network.parameters(), lr=args.learning_rate)
@@ -281,18 +286,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
 
         # TRY NOT TO MODIFY: execute the game and log data.
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-
-        if args.async_datarate is not None:
-            print(next_obs)
-            print(rewards)
-            print(terminations)
-            print(truncations)
-            print(infos)
-
-            # just take the last
-            next_obs = next_obs[-1]
-            rewards = sum(rewards)
-            infos = infos[-1]
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         if "final_info" in infos:

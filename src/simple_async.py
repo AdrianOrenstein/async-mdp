@@ -13,6 +13,12 @@ ActType = TypeVar("ActType")
 #     def step(self, action: ActType) -> Tuple[List[ObsType], List[float], bool, bool, List[Dict[str, Any]]]:
 
 
+def accumulate_rewards_and_pick_last_obs(
+    observations, rewards, truncated, terminated, infos
+):
+    return (observations[-1], sum(rewards), truncated, terminated, infos[-1])
+
+
 def compute_num_repeated_actions(
     environment_steps_per_second: int, agent_response_time: float
 ) -> int:
@@ -92,7 +98,9 @@ class AsynchronousGym(gym.Wrapper):
 
             if terminated or truncated:
                 self._roundtrip_start_time = time.monotonic()
-                return (observations, rewards, truncated, terminated, infos)
+                return accumulate_rewards_and_pick_last_obs(
+                    observations, rewards, truncated, terminated, infos
+                )
 
         # Once the environment is caught up, the agent's new action will be played.
         observation, reward, truncated, terminated, info = self.env.step(action)
@@ -109,7 +117,9 @@ class AsynchronousGym(gym.Wrapper):
 
         # Start measuring the agent's response time.
         self._roundtrip_start_time = time.monotonic()
-        return (observations, rewards, truncated, terminated, infos)
+        return accumulate_rewards_and_pick_last_obs(
+            observations, rewards, truncated, terminated, infos
+        )
 
 
 # class AsynchronousGymWithAccumulateRewardsAndPickLastObs(AsynchronousGym):
