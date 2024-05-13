@@ -4,6 +4,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=0-2:59
 #SBATCH --cpu-freq=Performance
+#SBATCH --array=1-30%1
 
 # setup and tear down takes .5-2 minutes.
 
@@ -34,10 +35,10 @@ echo "Waiting for background jobs to complete..."
 
 echo "Exporting env variables"
 export PYTHONPATH=$SLURM_TMPDIR/project/src:.
-export python_venv=$SLURM_TMPDIR/virtualenvs/async-mdp-PEBw-NfQ-py3.10/bin/python3.10
+export python_venv=$SLURM_TMPDIR/virtualenvs/pyenv/bin/python3.10
 
 echo "Running experiment..."
 cd $SLURM_TMPDIR/project
-$python_venv $@ 
+$python_venv $@ --seed $SLURM_ARRAY_TASK_ID
 
 echo "done"
