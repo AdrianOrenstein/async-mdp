@@ -6,19 +6,26 @@ import gymnasium as gym
 ObsType = TypeVar("ObsType")
 ActType = TypeVar("ActType")
 
-# environment has a limited number of steps: gymnasium.wrappers.TimeLimit(env: Env, max_episode_steps: int)
-# environmen will repeat actions if agent is slow by measuring the delta time between when an observation
-#   was sent to the agent, and when an action was received. If the agent is faster than the environment the
-#   environment will play the agent's action preference, if the agent is slower than the environment then the
-#   environment will repeat the old action preference until the agent is caught up, then the agent's new action
-#   preference will be played.
-# async wrapper applies a time limit, and the action repeat using deltatime, to simulate the asynchronous setting.
-
 # class AsyncGymWrapperWithRepeats(gym.Wrapper):
 #     def __init__(self, env: gym.Env):
 #         gym.Wrapper.__init__(self, env)
 
 #     def step(self, action: ActType) -> Tuple[List[ObsType], List[float], bool, bool, List[Dict[str, Any]]]:
+
+
+def compute_num_repeated_actions(
+    environment_steps_per_second: int, agent_response_time: float
+) -> int:
+    ratio = environment_steps_per_second * agent_response_time
+    print(
+        f"ratio: {ratio} agent_response_time: {agent_response_time} environment_steps_per_second: {environment_steps_per_second}"
+    )
+    # If you're on the same rate, you made it.
+    rounded_ratio = round(ratio)
+    if math.isclose(ratio, rounded_ratio, rel_tol=0.001):
+        return max(0, rounded_ratio - 1)
+
+    return max(0, math.floor(ratio))
 
 
 class AsynchronousGym(gym.Wrapper):
@@ -67,14 +74,9 @@ class AsynchronousGym(gym.Wrapper):
             num_repeat_actions = 0
         else:
             agent_response_time = time.monotonic() - self._roundtrip_start_time
-
-            ratio = self._environment_steps_per_second * agent_response_time
-
-            if math.isclose(ratio, 1, rel_tol=0.01, abs_tol=0.0):
-                # the agent used the maximum amount of time
-                num_repeat_actions = 0
-            else:
-                num_repeat_actions = math.floor(ratio)
+            num_repeat_actions = compute_num_repeated_actions(
+                self._environment_steps_per_second, agent_response_time
+            )
 
         observations = []
         rewards = []
@@ -125,60 +127,45 @@ class AsynchronousGym(gym.Wrapper):
 
 
 if __name__ == "__main__":
-
-    def agent_decide_action(decision_rate):
-        agent_start_time = time.monotonic()
-        action = env.action_space.sample()
-        # compute remaining time from steps per second and sleep that amount
-        if decision_rate > 0:
-            time.sleep(
-                max(0, (1 / decision_rate) - (time.monotonic() - agent_start_time))
-            )
-        return action
-
     env = gym.make("MountainCar-v0")
     env = AsynchronousGym(env, environment_steps_per_second=1)
 
     tests = [
-        # equal speed, the agent is not delayed, and used the maximum amount of time.
-        (1, 1, -1, 0),
-        # agent is faster
-        (1, 1 / 2, -1, 0),
-        (2, 1, -1, 0),
-        (3, 1, -1, 0),
-        (4, 1, -1, 0),
-        (5, 1, -1, 0),
-        # agent is slower
-        (1, 2, -3, 2),
-        (1, 3, -4, 3),
-        (1, 4, -5, 4),
-        (1, 5, -6, 5),
+        # agent is slower, bad.
+        (1, 2, 1),
+        (1, 3, 2),
+        (1, 4, 3),
+        (1, 5, 4),
+        # equal speed, the agent is not delayed, and used the maximum amount of time. great.
+        (1, 1, 0),
+        (2, 2, 0),
+        (5, 5, 0),
+        (100, 100, 0),
+        (10_000, 10_000, 0),
+        # agent is faster. great.
+        (1, 0.01, 0),
+        (1, 0.25, 0),
+        (1, 0.5, 0),
+        (1, 0.75, 0),
+        (2, 1, 0),
+        (3, 1, 0),
+        (4, 1, 0),
+        (5, 1, 0),
+        (10, 1, 0),
+        (100, 1, 0),
+        (1_000, 1, 0),
+        (10_000, 1, 0),
     ]
 
-    for agent_rate, environment_rate, expected_reward, expected_repeat_actions in tests:
-        (observation, info) = env.reset(environment_steps_per_second=environment_rate)
+    # Testing just the logic
+    print("Running unit tests")
+    for agent_rate, environment_rate, expected_repeat_actions in tests:
+        print(
+            f"Running test with agent_rate={agent_rate} and environment_rate={environment_rate}"
+        )
+        num_repeated_actions = compute_num_repeated_actions(
+            environment_rate, 1 / agent_rate
+        )
         assert (
-            info.get("num_repeated_actions") == 0
-        ), f"expected 0 but got {info.get('num_repeated_actions')}"
-        assert env._environment_steps_per_second == environment_rate
-        action = agent_decide_action(agent_rate)
-        (observations, rewards, truncated, terminated, infos) = env.step(action)
-
-        # just take the last
-        observation = observations[-1]
-        reward = sum(rewards)
-        info = infos[-1]
-
-        # the first time is always instintanious
-        assert reward == -1, f"expected {expected_reward} but got {rewards[0]}"
-
-        # the second time is when we can get delays
-        action = agent_decide_action(agent_rate)
-        observations, rewards, truncated, terminated, infos = env.step(action)
-
-        # just take the last
-        observation = observations[-1]
-        reward = sum(rewards)
-        info = infos[-1]
-
-        assert reward == expected_reward, f"expected {expected_reward} but got {reward}"
+            num_repeated_actions == expected_repeat_actions
+        ), f"A{agent_rate}:E{environment_rate} expected {expected_repeat_actions} but got {num_repeated_actions}"
