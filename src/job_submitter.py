@@ -119,7 +119,10 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
 
         yield run_config
 
-    yield from experiment_run(defaults=defaults, seed=0, data_rate=0)
+    # yield from experiment_run(defaults=defaults, seed=0, data_rate=0)
+
+    for data_rate in [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000]:
+        yield from experiment_run(defaults=defaults, seed=0, data_rate=data_rate)
 
     # for seed in range(0, num_seeds):
     # # async problem

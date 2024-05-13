@@ -375,6 +375,13 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                     agent_step,
                 )
 
+            if "ratio" in infos:
+                writer.add_scalar(
+                    "environment/ratio",
+                    infos["ratio"],
+                    agent_step,
+                )
+
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
         torch.save(q_network.state_dict(), model_path)

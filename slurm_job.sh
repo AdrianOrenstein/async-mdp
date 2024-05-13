@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=def-mbowling
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
 #SBATCH --time=0-2:59
 #SBATCH --cpu-freq=Performance
@@ -8,7 +8,7 @@
 
 # setup and tear down takes .5-2 minutes.
 
-# module load python/3.10.13
+# module load python/3.10.13 swig
 
 if [ "$SLURM_TMPDIR" == "" ]; then
     exit 1
@@ -35,8 +35,12 @@ echo "Exporting env variables"
 export PYTHONPATH=$SLURM_TMPDIR/project/src:.
 export python_venv=$SLURM_TMPDIR/virtualenvs/pyenv/bin/python3.10
 
+module load swig
+
 echo "Running experiment..."
 cd $SLURM_TMPDIR/project
 $python_venv $@ --seed $SLURM_ARRAY_TASK_ID
 
 echo "done"
+
+# $python_venv src/dqn.py --num-envs 1 --env-id LunarLander-v2 --wandb-entity the-orbital-mind --wandb-project-name testing --track --total-timesteps 300000 --learning_rate 0.003 --buffer_size 10000 --gamma 0.99 --target_network_frequency 500 --batch_size 128 --start_e 1 --end_e 0.05 --exploration_fraction 0.25 --learning_starts 10000 --train_frequency 10 --async-datarate 1000 --log-frequency 10

@@ -26,9 +26,9 @@ def compute_num_repeated_actions(
     # If you're on the same rate, you made it.
     rounded_ratio = round(ratio)
     if math.isclose(ratio, rounded_ratio, rel_tol=0.001):
-        return max(0, rounded_ratio - 1)
+        return max(0, rounded_ratio - 1), ratio
 
-    return max(0, math.floor(ratio))
+    return max(0, math.floor(ratio)), ratio
 
 
 class AsynchronousGym(gym.Wrapper):
@@ -75,9 +75,10 @@ class AsynchronousGym(gym.Wrapper):
         if self._roundtrip_start_time is None:
             agent_response_time = 0
             num_repeat_actions = 0
+            ratio = 0
         else:
             agent_response_time = time.monotonic() - self._roundtrip_start_time
-            num_repeat_actions = compute_num_repeated_actions(
+            num_repeat_actions, ratio = compute_num_repeated_actions(
                 self._environment_steps_per_second, agent_response_time
             )
 
@@ -92,6 +93,7 @@ class AsynchronousGym(gym.Wrapper):
                 {
                     "num_repeat_actions": i + 1,
                     "agent_response_time": agent_response_time,
+                    "ratio": ratio,
                 }
             )
             infos.append(info)
@@ -110,6 +112,7 @@ class AsynchronousGym(gym.Wrapper):
             {
                 "num_repeat_actions": num_repeat_actions,
                 "agent_response_time": agent_response_time,
+                "ratio": ratio,
             }
         )
         infos.append(info)
@@ -177,7 +180,7 @@ if __name__ == "__main__":
         # print(
         #     f"Running test with agent_rate={agent_rate} and environment_rate={environment_rate}"
         # )
-        num_repeated_actions = compute_num_repeated_actions(
+        num_repeated_actions, ratio = compute_num_repeated_actions(
             environment_rate, 1 / agent_rate
         )
         assert (
