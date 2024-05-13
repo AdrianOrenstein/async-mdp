@@ -13,7 +13,7 @@ import torch.optim as optim
 import tyro
 from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
-from src.simple_async import AsyncGymWrapper
+from src.simple_async import AsynchronousGym
 
 from tqdm import tqdm
 
@@ -91,6 +91,8 @@ class Args:
     """whether to upload the saved model to huggingface"""
     hf_entity: str = ""
     """the user or org name of the model repository from the Hugging Face Hub"""
+    log_frequency: int = 100
+    """the frequency of logging"""
 
     # Algorithm specific arguments
     env_id: str = "CartPole-v1"
@@ -145,9 +147,6 @@ def make_env(
     capture_video,
     run_name,
     async_datarate,
-    max_steps,
-    num_repeat_actions,
-    accumulate_rewards,
 ):
     def thunk():
         if capture_video and idx == 0:
@@ -158,13 +157,10 @@ def make_env(
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env.action_space.seed(seed)
 
-        if (async_datarate is not None) or (num_repeat_actions is not None):
-            env = AsyncGymWrapper(
+        if async_datarate is not None:
+            env = AsynchronousGym(
                 env,
                 environment_steps_per_second=async_datarate,
-                max_steps=max_steps,
-                repeat_actions=num_repeat_actions,
-                accumulate_rewards=accumulate_rewards,
             )
 
         return env
@@ -243,9 +239,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 args.capture_video,
                 run_name,
                 args.async_datarate,
-                args.total_timesteps,
-                args.num_repeat_actions,
-                args.accumulate_rewards,
             )
             for i in range(args.num_envs)
         ]
@@ -327,11 +320,10 @@ poetry run pip install "stable_baselines3==2.0.0a1"
                 old_val = q_network(data.observations).gather(1, data.actions).squeeze()
                 loss = F.mse_loss(td_target, old_val)
 
-                if agent_step % 100 == 0:
-                    writer.add_scalar("agent_losses/td_loss", loss, agent_step)
-                    writer.add_scalar(
-                        "agent_losses/q_values", old_val.mean().item(), agent_step
-                    )
+                writer.add_scalar("agent_losses/td_loss", loss, agent_step)
+                writer.add_scalar(
+                    "agent_losses/q_values", old_val.mean().item(), agent_step
+                )
 
                 # optimize the model
                 optimizer.zero_grad()
@@ -340,6 +332,11 @@ poetry run pip install "stable_baselines3==2.0.0a1"
 
             # update target network
             if agent_step % args.target_network_frequency == 0:
+                writer.add_scalar(
+                    "dqn/update_target_network",
+                    int(agent_step % args.target_network_frequency == 0),
+                    agent_step,
+                )
                 for target_network_param, q_network_param in zip(
                     target_network.parameters(), q_network.parameters()
                 ):
@@ -352,56 +349,36 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         sps = agent_step / (end_time - start_time)
         dsps = 1 / (end_time - dstart_time)
 
-        # give time for jit
-        if (agent_step > 3) and (agent_step % 100 == 0):
+        writer.add_scalar(
+            "agent/step_sps",
+            dsps,
+            agent_step,
+        )
+        writer.add_scalar(
+            "agent/step_dt",
+            end_time - dstart_time,
+            agent_step,
+        )
+
+        if "repeated_actions" in infos:
             writer.add_scalar(
-                "agent/step_sps",
-                dsps,
+                "environment/repeated_actions",
+                infos["num_repeated_actions"],
                 agent_step,
             )
-            writer.add_scalar(
-                "agent/step_dt",
-                end_time - dstart_time,
-                agent_step,
-            )
-
-            if "environment_roundtrip_dt" in infos:
-                writer.add_scalar(
-                    "environment/roundtrip_dt",
-                    infos["environment_roundtrip_dt"],
-                    agent_step,
-                )
-
-                writer.add_scalar(
-                    "environment/roundtrip_sps",
-                    1 / infos["environment_roundtrip_dt"],
-                    agent_step,
-                )
-                
-                writer.add_scalar(
-                    "environment/agent_environment_sps_ratio",
-                    args.async_datarate / (1 / infos["environment_roundtrip_dt"]),
-                    agent_step,
-                )
-                
-            if "repeated_actions" in infos:
-                writer.add_scalar(
-                    "environment/repeated_actions",
-                    infos["repeated_actions"],
-                    agent_step,
-                )
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
         torch.save(q_network.state_dict(), model_path)
         print(f"model saved to {model_path}")
-        from cleanrl_utils.evals.dqn_eval import evaluate
+        from src.dqn_eval import evaluate
 
         episodic_returns = evaluate(
             model_path,
             make_env,
             args.env_id,
-            eval_episodes=10,
+            args.async_datarate,
+            eval_episodes=100,
             run_name=f"{run_name}-eval",
             Model=QNetwork,
             device=device,
@@ -409,20 +386,6 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         )
         for idx, episodic_return in enumerate(episodic_returns):
             writer.add_scalar("eval/episodic_return", episodic_return, idx)
-
-        if args.upload_model:
-            from cleanrl_utils.huggingface import push_to_hub
-
-            repo_name = f"{args.env_id}-{args.exp_name}-seed{args.seed}"
-            repo_id = f"{args.hf_entity}/{repo_name}" if args.hf_entity else repo_name
-            push_to_hub(
-                args,
-                episodic_returns,
-                repo_id,
-                "DQN",
-                f"runs/{run_name}",
-                f"videos/{run_name}-eval",
-            )
 
     envs.close()
     writer.close()

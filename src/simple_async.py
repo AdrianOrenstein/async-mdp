@@ -17,9 +17,6 @@ def compute_num_repeated_actions(
     environment_steps_per_second: int, agent_response_time: float
 ) -> int:
     ratio = environment_steps_per_second * agent_response_time
-    print(
-        f"ratio: {ratio} agent_response_time: {agent_response_time} environment_steps_per_second: {environment_steps_per_second}"
-    )
     # If you're on the same rate, you made it.
     rounded_ratio = round(ratio)
     if math.isclose(ratio, rounded_ratio, rel_tol=0.001):
@@ -155,17 +152,25 @@ if __name__ == "__main__":
         (100, 1, 0),
         (1_000, 1, 0),
         (10_000, 1, 0),
+        # the environment will wait
+        (1, 0, 0),
+        (2, 0, 0),
+        (5, 0, 0),
+        (10, 0, 0),
+        (1000, 0, 0),
+        (10000, 0, 0),
     ]
 
     # Testing just the logic
     print("Running unit tests")
     for agent_rate, environment_rate, expected_repeat_actions in tests:
-        print(
-            f"Running test with agent_rate={agent_rate} and environment_rate={environment_rate}"
-        )
+        # print(
+        #     f"Running test with agent_rate={agent_rate} and environment_rate={environment_rate}"
+        # )
         num_repeated_actions = compute_num_repeated_actions(
             environment_rate, 1 / agent_rate
         )
         assert (
             num_repeated_actions == expected_repeat_actions
         ), f"A{agent_rate}:E{environment_rate} expected {expected_repeat_actions} but got {num_repeated_actions}"
+    print("Done")
