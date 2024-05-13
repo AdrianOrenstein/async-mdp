@@ -8,7 +8,7 @@
 
 # setup and tear down takes .5-2 minutes.
 
-module load python/3.10.13
+# module load python/3.10.13
 
 if [ "$SLURM_TMPDIR" == "" ]; then
     exit 1

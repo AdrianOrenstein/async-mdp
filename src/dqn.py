@@ -349,23 +349,31 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         sps = agent_step / (end_time - start_time)
         dsps = 1 / (end_time - dstart_time)
 
-        writer.add_scalar(
-            "agent/step_sps",
-            dsps,
-            agent_step,
-        )
-        writer.add_scalar(
-            "agent/step_dt",
-            end_time - dstart_time,
-            agent_step,
-        )
-
-        if "repeated_actions" in infos:
+        if agent_step % args.log_frequency == 0:
             writer.add_scalar(
-                "environment/repeated_actions",
-                infos["num_repeated_actions"],
+                "agent/step_sps",
+                dsps,
                 agent_step,
             )
+            writer.add_scalar(
+                "agent/step_dt",
+                end_time - dstart_time,
+                agent_step,
+            )
+
+            if "num_repeat_actions" in infos:
+                writer.add_scalar(
+                    "environment/num_repeat_actions",
+                    infos["num_repeat_actions"],
+                    agent_step,
+                )
+
+            if "agent_response_time" in infos:
+                writer.add_scalar(
+                    "environment/agent_response_time",
+                    infos["agent_response_time"],
+                    agent_step,
+                )
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
