@@ -287,6 +287,13 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         # TRY NOT TO MODIFY: execute the game and log data.
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
 
+        print(infos)
+
+        # just take the last
+        next_obs = next_obs[-1]
+        rewards = sum(rewards)
+        infos = infos[-1]
+
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         if "final_info" in infos:
             for info in infos["final_info"]:

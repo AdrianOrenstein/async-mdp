@@ -62,7 +62,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
         "wandb-project-name": "-".join(
             [
                 os.getenv("SLURM_CLUSTERID") or "na",
-                "simplified-async-interface-with-dqn",
+                "testing",
                 env_name.lower(),
             ]
         ),
@@ -90,6 +90,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
         "MountainCar-v0": {"learning_rate": 0.003},
         "CartPole-v1": {"learning_rate": 0.0003},
         "Acrobot-v1": {"learning_rate": 0.003},
+        "LunarLander-v2": {"learning_rate": 0.003},
     }
 
     def experiment_run(defaults, seed, data_rate=None, num_repeat_actions=None):
@@ -118,19 +119,21 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
 
         yield run_config
 
-    for seed in range(0, num_seeds):
-        # async problem
-        for data_rate in range(2_000, 45_000 + 1000, 1000):
-            yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
+    yield from experiment_run(defaults=defaults, seed=0, data_rate=0)
 
-        # simulating the async problem
-        for repeat_actions in range(0, 25 + 1):
-            yield from experiment_run(
-                defaults=defaults, seed=seed, num_repeat_actions=repeat_actions
-            )
+    # for seed in range(0, num_seeds):
+    # # async problem
+    # for data_rate in range(2_000, 45_000 + 1000, 1000):
+    #     yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
 
-        # no async wrapper
-        yield from experiment_run(defaults=defaults, seed=seed)
+    # # simulating the async problem
+    # for repeat_actions in range(0, 25 + 1):
+    #     yield from experiment_run(
+    #         defaults=defaults, seed=seed, num_repeat_actions=repeat_actions
+    #     )
+
+    # # no async wrapper
+    # yield from experiment_run(defaults=defaults, seed=seed)
 
 
 def seconds_to_hms(seconds: float):
@@ -141,7 +144,7 @@ def seconds_to_hms(seconds: float):
 
 
 if __name__ == "__main__":
-    ENV_NAMES = ["CartPole-v1", "MountainCar-v0", "Acrobot-v1"]
+    ENV_NAMES = ["CartPole-v1", "MountainCar-v0", "Acrobot-v1", "LunarLander-v2"]
     EXPERIMENTS = {
         # "observing_steprate_over_training": observing_steprate_over_training,
         # "changing_datarate_for_DQN": changing_datarate_for_DQN,
@@ -158,7 +161,7 @@ if __name__ == "__main__":
                 (
                     str(i)
                     for i in [
-                        job_dic.get("num-repeat-actions", "na"),
+                        # job_dic.get("num-repeat-actions", "na"),
                         job_dic.get("async-datarate", "na"),
                         job_dic.get("learning_rate"),
                         experiment_name.replace("_", ""),
