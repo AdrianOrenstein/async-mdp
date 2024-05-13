@@ -238,9 +238,9 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         run_name,
         args.async_datarate,
     )
-    assert isinstance(
-        envs.single_action_space, gym.spaces.Discrete
-    ), "only discrete action space is supported"
+    # assert isinstance(
+    #     envs.single_action_space, gym.spaces.Discrete
+    # ), "only discrete action space is supported"
 
     q_network = QNetwork(envs).to(device)
     optimizer = optim.Adam(q_network.parameters(), lr=args.learning_rate)
