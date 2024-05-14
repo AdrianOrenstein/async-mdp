@@ -4,7 +4,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=0-2:59
 #SBATCH --cpu-freq=Performance
-#SBATCH --array=1-50%1
+#SBATCH --array=1-30%1
 
 # setup and tear down takes .5-2 minutes.
 
