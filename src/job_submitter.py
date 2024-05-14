@@ -46,6 +46,7 @@ def observing_steprate_over_training(
         yield run_config
 
 
+
 def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
     """
     We've computed the average datarate of DQN for the basic control environments which is about 9300 sps.
@@ -123,21 +124,6 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
 
     for data_rate in [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000]:
         yield from experiment_run(defaults=defaults, seed=0, data_rate=data_rate)
-
-    # for seed in range(0, num_seeds):
-    # # async problem
-    # for data_rate in range(2_000, 45_000 + 1000, 1000):
-    #     yield from experiment_run(defaults=defaults, seed=seed, data_rate=data_rate)
-
-    # # simulating the async problem
-    # for repeat_actions in range(0, 25 + 1):
-    #     yield from experiment_run(
-    #         defaults=defaults, seed=seed, num_repeat_actions=repeat_actions
-    #     )
-
-    # # no async wrapper
-    # yield from experiment_run(defaults=defaults, seed=seed)
-
 
 def seconds_to_hms(seconds: float):
     hours = seconds // 3600
@@ -256,4 +242,4 @@ if __name__ == "__main__":
             print(f"Skipping completed job {job_UID}")
 
 # SLURM_CLUSTERID=m1_mac PYTHONPATH=./src:. poetry run python src/job_submitter.py
-# DONT_SUBMIT_SEEDS=1 SLURM_CLUSTERID=beluga_4cpu_perf_arrayjob_final python src/job_submitter.py
+# DONT_SUBMIT_SEEDS=1 SLURM_CLUSTERID=beluga_8cpu python src/job_submitter.py

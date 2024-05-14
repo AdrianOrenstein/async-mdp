@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --account=def-mbowling
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=0-2:59
 #SBATCH --cpu-freq=Performance
-#SBATCH --array=1-30%1
+#SBATCH --array=1-50%1
 
 # setup and tear down takes .5-2 minutes.
 

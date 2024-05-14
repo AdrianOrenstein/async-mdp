@@ -252,6 +252,8 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     target_network = QNetwork(envs).to(device)
     target_network.load_state_dict(q_network.state_dict())
 
+    print("network params ", sum(p.numel() for p in target_network.parameters()))
+
     rb = ReplayBuffer(
         args.buffer_size,
         envs.single_observation_space,
