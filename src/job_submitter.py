@@ -46,7 +46,6 @@ def observing_steprate_over_training(
         yield run_config
 
 
-
 def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
     """
     We've computed the average datarate of DQN for the basic control environments which is about 9300 sps.
@@ -63,7 +62,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
         "wandb-project-name": "-".join(
             [
                 os.getenv("SLURM_CLUSTERID") or "na",
-                "testing",
+                "async-interface",
                 env_name.lower(),
             ]
         ),
@@ -89,9 +88,11 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
 
     algo_kwargs = {
         "MountainCar-v0": {"learning_rate": 0.003},
-        "CartPole-v1": {"learning_rate": 0.0003},
+        # "CartPole-v1": {"learning_rate": 0.0003},
+        "CartPole-v1": {"learning_rate": 0.0005},
         "Acrobot-v1": {"learning_rate": 0.003},
-        "LunarLander-v2": {"learning_rate": 0.003},
+        # "LunarLander-v2": {"learning_rate": 0.003},
+        "LunarLander-v2": {"learning_rate": 0.0003},
     }
 
     def experiment_run(defaults, seed, data_rate=None, num_repeat_actions=None):
@@ -106,6 +107,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
                 [
                     run_config["wandb-project-name"],
                     str(run_config.get("total-timesteps")),
+                    str(run_config.get("learning_rate")),
                 ]
             )
 
@@ -125,6 +127,7 @@ def simplified_async_interface_with_dqn(env_name="CartPole-v1", num_seeds=10):
     for data_rate in [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000]:
         yield from experiment_run(defaults=defaults, seed=0, data_rate=data_rate)
 
+
 def seconds_to_hms(seconds: float):
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
@@ -133,7 +136,7 @@ def seconds_to_hms(seconds: float):
 
 
 if __name__ == "__main__":
-    ENV_NAMES = ["CartPole-v1", "MountainCar-v0", "Acrobot-v1", "LunarLander-v2"]
+    ENV_NAMES = ["CartPole-v1", "LunarLander-v2"]  # "MountainCar-v0", "Acrobot-v1",
     EXPERIMENTS = {
         # "observing_steprate_over_training": observing_steprate_over_training,
         # "changing_datarate_for_DQN": changing_datarate_for_DQN,
