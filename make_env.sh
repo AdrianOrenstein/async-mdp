@@ -17,7 +17,7 @@ mkdir -p $TEMP_DIR/virtualenvs && \
 	# 
 	echo "activated..." && \
 	pip install 'requests[socks]' --no-index && \
-	pip install --no-cache-dir gymnasium "gymnasium[classic-control,box2d,atari,other]" filelock pillow autorom "numpy<2" "stable_baselines3==2.0.0a1" tqdm tyro torch tensorboard wandb --index-url https://pypi.org/simple && \
+	pip install --no-cache-dir minigrid gymnasium "gymnasium[classic-control,box2d,atari,other]" filelock pillow autorom "numpy<2" "stable_baselines3==2.0.0a1" tqdm tyro torch tensorboard wandb --index-url https://pypi.org/simple && \
 	AutoROM -y && \ 
 	# 
 	cd $TEMP_DIR && \
