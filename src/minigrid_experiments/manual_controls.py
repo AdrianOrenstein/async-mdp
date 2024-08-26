@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
 
 import gymnasium as gym
-import numpy as np
-import torch
-from minigrid.minigrid_env import MiniGridEnv
-from minigrid.wrappers import RGBImgPartialObsWrapper, ImgObsWrapper
 
 import cv2
+
+from src.minigrid_experiments.levels import Maze, LargeEmpty
+from minigrid.wrappers import FullyObsWrapper
 
 
 def process_key(key, env):
     """Map key presses to actions and interact with the environment."""
     key_to_action = {
-        ord("w"): env.actions.forward,  # Move forward
-        ord("a"): env.actions.left,  # Turn left
-        ord("d"): env.actions.right,  # Turn right
-        ord(" "): env.actions.toggle,  # Toggle (interact)
-        ord("p"): env.actions.pickup,  # Pickup
-        ord("q"): None,  # Quit the game
-        27: None,  # Esc key to quit the game
+        # Move forward
+        ord("w"): env.actions.forward,
+        # Turn left
+        ord("a"): env.actions.left,
+        # Turn right
+        ord("d"): env.actions.right,
+        # Toggle (interact)
+        ord(" "): env.actions.toggle,
+        # Pickup
+        ord("p"): env.actions.pickup,
+        # Drop
+        ord("o"): env.actions.drop,
+        # Done
+        ord("e"): env.actions.done,
+        # Quit the game
+        ord("q"): None,
+        27: None,
     }
 
     return key_to_action.get(key, None)
@@ -32,7 +41,7 @@ if __name__ == "__main__":
         "--env-id",
         type=str,
         help="gym environment to load",
-        choices=gym.envs.registry.keys(),
+        choices=list(gym.envs.registry.keys()) + ["Maze", "TShaped", "LargeEmpty"],
         default="MiniGrid-MultiRoom-N6-v0",
     )
     parser.add_argument(
@@ -42,7 +51,7 @@ if __name__ == "__main__":
         default=None,
     )
     parser.add_argument(
-        "--tile-size", type=int, help="size at which to render tiles", default=32
+        "--tile-size", type=int, help="size at which to render tiles", default=33
     )
     parser.add_argument(
         "--agent-view",
@@ -64,13 +73,40 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    env: MiniGridEnv = gym.make(
-        args.env_id,
-        tile_size=args.tile_size,
-        render_mode="human",
-        agent_pov=args.agent_view,
-        agent_view_size=args.agent_view_size,
-    )
+    if args.env_id in gym.envs.registry.keys():
+        env = gym.make(
+            args.env_id,
+            tile_size=args.tile_size,
+            render_mode="human",
+            agent_pov=args.agent_view,
+            agent_view_size=args.agent_view_size,
+        )
+
+    elif args.env_id == "Maze":
+        env = Maze(
+            tile_size=args.tile_size,
+            render_mode="human",
+            # agent_pov=args.agent_view,
+            # agent_view_size=args.agent_view_size,
+        )
+
+    elif args.env_id == "TShaped":
+        env = gym.make(
+            "MiniGrid-MemoryS17Random-v0",
+            tile_size=args.tile_size,
+            render_mode="human",
+            # agent_pov=args.agent_view,
+            # agent_view_size=args.agent_view_size,
+        )
+
+    elif args.env_id == "LargeEmpty":
+        env = LargeEmpty(
+            tile_size=args.tile_size,
+            render_mode="human",
+            # agent_pov=args.agent_view,
+            # agent_view_size=args.agent_view_size,
+        )
+    env = FullyObsWrapper(env)
 
     # This now produces an RGB tensor only
     obs, _ = env.reset()
@@ -86,7 +122,7 @@ if __name__ == "__main__":
             ),
             0,  # flip vertically
         )
-        print(data.sum(-1))
+        print(data.sum(-1), data.sum(-1).shape)
         # horizontally flip the image
         cv2.imshow(
             "Observation",
@@ -117,5 +153,6 @@ if __name__ == "__main__":
     cv2.destroyAllWindows()
 
 
-# python src/minigrid_experiments/manual_controls.py
-# python src/minigrid_experiments/manual_controls.py --agent-view
+# PYTHONPATH=~/work/async-mdp:. python src/minigrid_experiments/manual_controls.py
+# PYTHONPATH=~/work/async-mdp:. python src/minigrid_experiments/manual_controls.py --agent-view
+# PYTHONPATH=~/work/async-mdp:. python src/minigrid_experiments/manual_controls.py --agent-view --env-id Maze
